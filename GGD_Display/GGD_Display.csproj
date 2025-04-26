@@ -6,4 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Remove="StreamerNameFile.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="StreamerNameFile.json" />
+  </ItemGroup>
+
 </Project>
