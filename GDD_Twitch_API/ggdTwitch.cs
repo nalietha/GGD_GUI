@@ -4,18 +4,13 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Configuration;
 
 namespace GGD_Twitch_API
 {
     public class ggdTwitch
     {
         // Create call function
-        GetLiveStatus(List<APICallSteamerListModel> slist)
-        {
-
-            var streamerList = new List<APICallSteamerListModel>();
-
-        }
 
 
         public class TwitchUserInfo
