@@ -4,7 +4,65 @@
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+
+
+<div class="grid-container">
+    @for (int i = 1; i <= 16; i++)
+    {
+        <div class="canvas-box" id="canvas-@i" onmouseenter="enlargeCanvas(@i)" onmouseleave="shrinkCanvas(@i)">
+            <h3>Canvas @i</h3>
+            <form method="post" asp-page-handler="ChangeColor">
+                <input type="hidden" name="index" value="@i" />
+                <button type="submit" class="color-box" style="background-color:@Model.CanvasColors[@i];" onclick="lockEnlargement(@i)"></button>
+
+            </form>
+            <div class="settings-placeholder">
+                Q Option
+            </div>
+            <div class="lighting-mode-section">
+                <h4>Lighting Mode</h4>
+                <div class="mode-options">
+                    @foreach (var mode in Model.LightingModes)
+                    {
+                        <button class="mode-button" title="@mode.Name">
+                            <span>@mode.Icon</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 </div>
+
+@section Scripts {
+    <script>
+        let lockedCanvasId = null;
+
+        function enlargeCanvas(id) {
+            if (lockedCanvasId !== id) {
+                const el = document.getElementById('canvas-' + id);
+                el.classList.remove('shrink');
+                el.classList.add('enlarged');
+            }
+        }
+
+        function shrinkCanvas(id) {
+            if (lockedCanvasId !== id) {
+                const el = document.getElementById('canvas-' + id);
+                el.classList.remove('enlarged');
+                el.classList.add('shrink');
+                setTimeout(() => {
+                    el.classList.remove('shrink');
+                }, 2000);
+            }
+        }
+
+        function lockEnlargement(id) {
+            lockedCanvasId = id;
+            const el = document.getElementById('canvas-' + id);
+            el.classList.add('enlarged');
+        }
+    </script>
+}
+

@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35521.163 d17.12
+VisualStudioVersion = 17.12.35521.163
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GGD_Display", "GGD_Display\GGD_Display.csproj", "{F0C243D9-0002-4389-9383-7E6B34CA3A9D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GGD_Display", "GGD_Display\GGD_Display.csproj", "{F0C243D9-0002-4389-9383-7E6B34CA3A9D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GDD_Twitch_API", "GDD_Twitch_API\GDD_Twitch_API.csproj", "{70CD5902-02FC-4200-8A32-1B9332D43253}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GGD_Twitch_API", "GDD_Twitch_API\GGD_Twitch_API.csproj", "{70CD5902-02FC-4200-8A32-1B9332D43253}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,5 +24,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FFA1022C-68A7-4B31-AE8B-BA3B6580E8B5}
 	EndGlobalSection
 EndGlobal
