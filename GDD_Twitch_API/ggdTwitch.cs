@@ -9,15 +9,7 @@ namespace GGD_Twitch_API
 {
     public class ggdTwitch
     {
-        // Create call function
-        GetLiveStatus(List<APICallSteamerListModel> slist)
-        {
-
-            var streamerList = new List<APICallSteamerListModel>();
-
-        }
-
-
+ 
         public class TwitchUserInfo
         {
             public string DisplayName { get; set; }

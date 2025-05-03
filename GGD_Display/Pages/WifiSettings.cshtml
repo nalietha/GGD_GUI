@@ -1,0 +1,28 @@
+﻿@page
+@model GGD_Display.Pages.WifiSettingsModel
+@{
+    ViewData["Title"] = "Default Wifi Settings";
+}
+
+
+<div>
+    <div class="disclaimer">Please make sure the WiFi credentials entered are correct. Incorrect credentials may prevent the device from connecting to the network and could result in fallback behavior.</div>
+    <h2>Add your home wifi settings</h2>
+    <div class="setting-column">
+        <label for="wifiUsername">WiFi Username</label>
+        <input type="text" id="wifiUsername" placeholder="Enter WiFi username">
+    </div>
+
+    <div class="setting-column">
+        <label for="wifiPassword">WiFi Password</label>
+        <input type="password" id="wifiPassword" placeholder="Enter WiFi password">
+    </div>
+
+    <div class="disclaimer">
+        <strong>Privacy Disclaimer:</strong><br>
+        When you enter your WiFi SSID and password into this application, the credentials are used solely to connect a Raspberry Pi device to your wireless network.<br><br>
+        The information is transmitted locally to the Raspberry Pi via this web server and <strong>is not stored, logged, or transmitted to any external servers or third parties</strong>.<br><br>
+        This process is necessary for enabling the Raspberry Pi to access the internet for updates and to perform its designated functions. By proceeding, you acknowledge and accept that the device will attempt to join the provided network using the credentials you enter.
+    </div>
+
+</div>
