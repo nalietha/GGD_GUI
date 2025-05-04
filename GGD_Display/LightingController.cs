@@ -1,4 +1,5 @@
-﻿namespace GGD_Display
+﻿
+namespace GGD_Display
 {
     /// <summary>
     /// Controller for the lighting system.
@@ -21,11 +22,13 @@
 
 
             // Initialize the node colors with default values (e.g., all off/black)
-            nodeColors = new Dictionary<int, (int Red, int Green, int Blue)>();
-            for (int i = 0; i < 16; i++)
-            {
-                nodeColors[i] = (0, 0, 0); // Default to black (off)
-            }
+            nodeColors = LoadNodeData();
+
+        }
+
+        public Dictionary<int, (int Red, int Green, int Blue)>? GetSavedLEDColors()
+        {
+            // From the file controller Get the saved LED colors cropped from the JSON file
 
 
         }

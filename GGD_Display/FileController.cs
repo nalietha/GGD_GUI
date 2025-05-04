@@ -1,4 +1,7 @@
-﻿namespace GGD_Display
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace GGD_Display
 {
     /// <summary>
     /// Controller for the file system.
@@ -14,7 +17,7 @@
             // For example, using System.IO to create directories and files
             CreateLocalData();
         }
-
+        #region Local Data
         private string GetFilePath(string fileName)
         {
             // Get the file path for the given file name
@@ -52,6 +55,38 @@
                 throw new UnauthorizedAccessException("Application does not have permission to access the file system");
             }
         }
+
+        #endregion
+
+        #region Load Data
+
+        /// <summary>
+        /// Loads in what the user had as their last display settings.
+        /// ie streamerMode, rainbowMode, static
+        /// </summary>
+        public void LoadDisplaySettings()
+        {
+
+
+        }
+
+        /// <summary>
+        /// Load in the node data placed into the nodeColors
+        /// </summary>
+        public Dictionary<int, (int Red, int Green, int Blue)>? LoadNodeData()
+        {
+            Dictionary<int, (int Red, int Green, int Blue)> lightNodeList = new Dictionary<int, (int Red, int Green, int Blue)>();
+            // Get the Data from save.json
+
+
+
+            return lightNodeList;
+        }
+
+        #endregion
+
+        #region Save Data
+
         /// <summary>
         /// Saves the display settings to a file.
         /// streamer data
@@ -83,6 +118,25 @@
 
             return true;
         }
+
+        public bool SaveNodeData(int nodeId)
+        {
+            // Save the node data to a file
+            if (!File.Exists(GetFilePath("save.json")))
+            {
+                throw new FileNotFoundException("Save file not found");
+            }
+            // This is where you would save the node data to a file
+            using (StreamWriter sw = new StreamWriter(GetFilePath("save.json")))
+            {
+                // Write the node data to the file
+                // This is where you would write the node data to the file
+                sw.WriteLine("Node data saved");
+            }
+            return true;
+        }
+
+        #endregion
 
 
     }
