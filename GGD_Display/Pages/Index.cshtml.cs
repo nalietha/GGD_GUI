@@ -6,6 +6,11 @@ namespace GGD_Display.Pages
     public class IndexModel : PageModel
     {
         private readonly ILogger<IndexModel> _logger;
+        [BindProperty]
+        public int Index { get; set; }
+        [BindProperty]
+        public string ColorHex { get; set; }
+        public List<string> Colors { get; set; } = Enumerable.Repeat("#cccccc", 16).ToList();
 
         public IndexModel(ILogger<IndexModel> logger)
         {
@@ -22,14 +27,20 @@ namespace GGD_Display.Pages
                 CanvasColors[i] = "#cccccc"; // Default gray
             }
         }
-        [BindProperty]
-        public int Index { get; set; }
-        public List<string> Colors { get; set; } = Enumerable.Repeat("#cccccc", 16).ToList();
+
 
         public void OnPostChangeColor()
         {
-            var newColor = "#" + new Random().Next(0x1000000).ToString("X6");
-            CanvasColors[Index] = newColor;
+            LoadCanvasColors();
+            if (!string.IsNullOrEmpty(ColorHex))
+            {
+                CanvasColors[Index] = ColorHex;
+            }
+            else
+            {
+                CanvasColors[Index] = "#" + new Random().Next(0x1000000).ToString("X6");
+            }
+            SaveCanvasColors();
         }
 
         public class LightingMode
