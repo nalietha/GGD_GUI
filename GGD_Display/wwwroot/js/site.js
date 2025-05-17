@@ -41,3 +41,40 @@ function toggleAccordion(button) {
     const content = button.nextElementSibling;
     content.style.display = content.style.display === "block" ? "none" : "block";
 }
+
+function lockEnlargement(id) {
+    lockedCanvasId = id;
+    const el = document.getElementById('canvas-' + id);
+    el.classList.add('enlarged');
+
+    // Show the color picker
+    const picker = document.getElementById('colorPicker-' + id);
+    picker.style.display = 'block';
+}
+
+function submitColor(id, color) {
+    // Hide picker
+    const picker = document.getElementById('colorPicker-' + id);
+    picker.style.display = 'none';
+
+    // Submit via hidden form
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = '?handler=ChangeColor';
+
+    const indexInput = document.createElement('input');
+    indexInput.type = 'hidden';
+    indexInput.name = 'Index';
+    indexInput.value = id;
+
+    const colorInput = document.createElement('input');
+    colorInput.type = 'hidden';
+    colorInput.name = 'ColorHex';
+    colorInput.value = color;
+
+    form.appendChild(indexInput);
+    form.appendChild(colorInput);
+
+    document.body.appendChild(form);
+    form.submit();
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "Nodes": {
+      "ID_00": {
+        "Color": "",
+        "LinkedTwtichID": "",
+        "DisplaySetting": ""
+      },
+      "ID_01": {
+        "Color": "",
+        "LinkedTwtichID": "",
+        "DisplaySetting": ""
+      },
+      "ID_02": {
+        "Color": "",
+        "LinkedTwtichID": "",
+        "DisplaySetting": ""
+      }
+    },
+    "Streamers": {
+      "Name": {
+        "DisplayName": "",
+        "ID": "",
+        "Color": ""
+
+      }
+    },
+    "Settings": {
+      "DisplayMode": "",
+      "Brightness":,
+      "Others": ""
+
+    }
+  }
+]

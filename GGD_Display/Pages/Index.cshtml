@@ -6,20 +6,18 @@
 
 
 
-
 <div class="grid-container">
     @for (int i = 1; i <= 16; i++)
     {
         <div class="canvas-box" id="canvas-@i" onmouseenter="enlargeCanvas(@i)" onmouseleave="shrinkCanvas(@i)">
+            @* Replace with the name of the streamer that is at this index *@
             <h3>Canvas @i</h3>
             <form method="post" asp-page-handler="ChangeColor">
                 <input type="hidden" name="index" value="@i" />
                 <button type="submit" class="color-box" style="background-color:@Model.CanvasColors[@i];" onclick="lockEnlargement(@i)"></button>
 
             </form>
-            <div class="settings-placeholder">
-                Q Option
-            </div>
+
             <div class="lighting-mode-section">
                 <h4>Lighting Mode</h4>
                 <div class="mode-options">
