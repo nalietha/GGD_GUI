@@ -5,7 +5,7 @@ VisualStudioVersion = 17.12.35521.163
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GGD_Display", "GGD_Display\GGD_Display.csproj", "{F0C243D9-0002-4389-9383-7E6B34CA3A9D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GGD_Twitch_API", "GDD_Twitch_API\GGD_Twitch_API.csproj", "{70CD5902-02FC-4200-8A32-1B9332D43253}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GGDTwitchAPI", "GDD_Twitch_API\GGDTwitchAPI.csproj", "{70CD5902-02FC-4200-8A32-1B9332D43253}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
