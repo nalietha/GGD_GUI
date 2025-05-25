@@ -9,11 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="StreamerNameFile.json" />
+    <Compile Remove="Utilities.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="StreamerNameFile.json" />
+    <None Remove="ChangeLog.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\data\save.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

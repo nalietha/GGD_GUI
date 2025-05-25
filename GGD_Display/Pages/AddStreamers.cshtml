@@ -1,0 +1,41 @@
+﻿@page
+@model AddStreamersModel
+@{
+    Layout = null; // So it's not full-page layout inside modal
+}
+
+
+<div class="streamer-add-section mt-6 p-4 border rounded bg-white shadow">
+    <h2 class="text-xl font-bold mb-2">Add Streamers</h2>
+
+    <label for="streamerInput" class="block font-medium mb-1">Enter Streamer Names or Twitch Links:</label>
+    <textarea id="streamerInput" name="streamerInput" rows="4"
+              class="w-full border rounded px-2 py-1"
+              placeholder="e.g. streamername123 or https://www.twitch.tv/streamername123"></textarea>
+
+    <button type="button"
+            class="mt-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded"
+            onclick="submitStreamers()">
+        Add Streamers
+    </button>
+
+    <div class="mt-4">
+        <button type="button"
+                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded"
+                disabled>
+            🔒 Get Info from Twitch Login (Coming Soon)
+        </button>
+    </div>
+</div>
+
+
+<script>
+    function submitStreamers() {
+        const input = document.getElementById("streamerInput").value;
+        const streamers = input.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+        console.log("To submit to server:", streamers);
+
+        // TODO: Send this list to a Razor handler or backend endpoint
+        // via fetch(), AJAX, or a form post
+    }
+</script>

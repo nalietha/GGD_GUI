@@ -9,15 +9,19 @@
 <div class="grid-container">
     @for (int i = 1; i <= 16; i++)
     {
+        var canvas = Model.Canvases.FirstOrDefault(c => c.NodeId == i);
+        var title = Model.GetStreamerNameForNode(i);
+        var color = canvas?.ColorHex ?? "#cccccc";
+
         <div class="canvas-box" id="canvas-@i" onmouseenter="enlargeCanvas(@i)" onmouseleave="shrinkCanvas(@i)">
-            @* Replace with the name of the streamer that is at this index *@
-            <h3>Canvas @i</h3>
+            <h3>@title</h3>
             <form method="post" asp-page-handler="ChangeColor">
                 <input type="hidden" name="index" value="@i" />
-                <button type="submit" class="color-box" style="background-color:@Model.CanvasColors[@i];" onclick="lockEnlargement(@i)"></button>
-
+                <button type="submit" class="color-box" style="background-color:@color;" onclick="lockEnlargement(@i)"></button>
             </form>
-
+            <div class="settings-placeholder">
+                Placeholder toggle here
+            </div>
             <div class="lighting-mode-section">
                 <h4>Lighting Mode</h4>
                 <div class="mode-options">
@@ -31,8 +35,22 @@
             </div>
         </div>
     }
+
+    <div id="addStreamerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
+        <div class="bg-white w-full max-w-2xl p-6 rounded shadow-lg relative">
+            <button onclick="closeStreamerModal()" class="absolute top-2 right-2 text-gray-600 hover:text-black text-lg">✕</button>
+
+            <!-- Dynamic content loaded here -->
+            <div id="addStreamerContent">
+                Loading...
+            </div>
+        </div>
+    </div>
 </div>
 
+<button onclick="openStreamerModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+    ➕ Add Streamers
+</button>
 @section Scripts {
     <script>
         let lockedCanvasId = null;
@@ -61,6 +79,28 @@
             const el = document.getElementById('canvas-' + id);
             el.classList.add('enlarged');
         }
+
+                
+        function openStreamerModal() {
+            const modal = document.getElementById("addStreamerModal");
+            const content = document.getElementById("addStreamerContent");
+
+            // Load the Razor page content via fetch
+            fetch("/AddStreamers")
+                .then(response => response.text())
+                .then(html => {
+                    content.innerHTML = html;
+                    modal.classList.remove("hidden");
+                    modal.classList.add("flex");
+                });
+        }
+
+        function closeStreamerModal() {
+            const modal = document.getElementById("addStreamerModal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
     </script>
 }
 
