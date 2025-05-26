@@ -106,14 +106,14 @@
       {
         "name": "IronMouse",
         "streamerID": "123",
-        "streamerColor": "d46aea",
+        "streamerColor": "#d46aea",
         "displayStyle": "static",
         "isLive": true
       },
       {
         "name": "Nyanners",
         "streamerID": "956",
-        "streamerColor": "fc5478",
+        "streamerColor": "#fc5478",
         "isLive": false
       },
       {
