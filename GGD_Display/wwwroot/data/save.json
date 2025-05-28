@@ -1,141 +1,250 @@
-[
-  {
-    "metadata": {
-      "version": "0.0.0.3a",
-      "date": "2025-05-24"
+{
+  "metadata": {
+    "Version": "0.0.4.3a",
+    "LastUpdated": "2025-05-27T17:38:32.1365795Z"
+  },
+  "nodes": [
+    {
+      "NodeId": 0,
+      "ColorHex": "",
+      "LinkedStreamerId": "15b94807-02e6-4a26-bd89-8c5be697301e",
+      "DisplaySetting": ""
     },
-    "nodes": [
-      {
-        "nodeId": 0,
-        "color": "",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 1,
-        "color": "#FF0000",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 2,
-        "color": "#00FF00",
-        "linkedStreamerID": "123",
-        "displaySetting": "static"
-      },
-      {
-        "nodeId": 3,
-        "color": "#0000FF",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 4,
-        "color": "#FFFF00",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 5,
-        "color": "#FF00FF",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 6,
-        "color": "#00FFFF",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 7,
-        "color": "#800080",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 8,
-        "color": "#008080",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 9,
-        "color": "#808000",
-        "linkedStreamerID": "456",
-        "displaySetting": "static"
-      },
-      {
-        "nodeId": 10,
-        "color": "#C0C0C0",
-        "linkedStreamerID": "956",
-        "displaySetting": "static"
-      },
-      {
-        "nodeId": 11,
-        "color": "#FFA500",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 12,
-        "color": "#800000",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 13,
-        "color": "#008000",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 14,
-        "color": "#000080",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      },
-      {
-        "nodeId": 15,
-        "color": "#808080",
-        "linkedStreamerID": "",
-        "displaySetting": ""
-      }
-    ],
-    "streamers": [
-      {
-        "name": "IronMouse",
-        "streamerID": "123",
-        "streamerColor": "#d46aea",
-        "displayStyle": "static",
-        "isLive": true
-      },
-      {
-        "name": "Nyanners",
-        "streamerID": "956",
-        "streamerColor": "#fc5478",
-        "isLive": false
-      },
-      {
-        "name": "DooleyNoted",
-        "streamerID": "456",
-        "streamerColor": "#532A9A",
-        "altColor": "#FD800A",
-        "isLive": true
-      },
-      {
-        "name": "Boa",
-        "streamerID": "",
-        "streamerColor": "#243b63",
-        "altColor": "#00FFFF",
-        "isLive": false
-      }
-    ],
-    "settings": {
-      "displayMode": "",
-      "brightness": 32,
-      "others": ""
-
+    {
+      "NodeId": 1,
+      "ColorHex": "#ffc800",
+      "LinkedStreamerId": "fdc8b11b-23a0-481b-b59d-b87861df10b3",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 2,
+      "ColorHex": "#e40707",
+      "LinkedStreamerId": "d9b0e183-18ae-4f84-bce4-dbc21a9fc004",
+      "DisplaySetting": "static"
+    },
+    {
+      "NodeId": 3,
+      "ColorHex": "#a5dfa3",
+      "LinkedStreamerId": "b720a8ba-7391-446b-be81-5280ed8875b9",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 4,
+      "ColorHex": "#ffcb0f",
+      "LinkedStreamerId": "2e5d175f-6ede-476c-aa57-5422fd424976",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 5,
+      "ColorHex": "#e301f4",
+      "LinkedStreamerId": "d9b0e183-18ae-4f84-bce4-dbc21a9fc004",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 6,
+      "ColorHex": "#00FFFF",
+      "LinkedStreamerId": "97b3ad27-4d74-4948-9908-f808d07cf3df",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 7,
+      "ColorHex": "#cb0606",
+      "LinkedStreamerId": "3c3c9b6a-c093-4b3e-a7ec-d39c9a4e289b",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 8,
+      "ColorHex": "#008080",
+      "LinkedStreamerId": "ad19c74d-d418-4801-a80b-d43801d353fa",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 9,
+      "ColorHex": "#808000",
+      "LinkedStreamerId": "15b94807-02e6-4a26-bd89-8c5be697301e",
+      "DisplaySetting": "static"
+    },
+    {
+      "NodeId": 10,
+      "ColorHex": "#C0C0C0",
+      "LinkedStreamerId": "3c3c9b6a-c093-4b3e-a7ec-d39c9a4e289b",
+      "DisplaySetting": "static"
+    },
+    {
+      "NodeId": 11,
+      "ColorHex": "#FFA500",
+      "LinkedStreamerId": "e240be81-d49a-4651-aef6-e70695fcb319",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 12,
+      "ColorHex": "#800000",
+      "LinkedStreamerId": "3d0fdd10-2533-4f3e-93b3-178a54f29b12",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 13,
+      "ColorHex": "#f5e400",
+      "LinkedStreamerId": "e213338d-2442-4d58-bc6b-1d063cb57224",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 14,
+      "ColorHex": "#000080",
+      "LinkedStreamerId": "f4417d1e-88bc-470a-84d3-6a143bdf91d9",
+      "DisplaySetting": ""
+    },
+    {
+      "NodeId": 15,
+      "ColorHex": "#808080",
+      "LinkedStreamerId": "671514db-757f-4510-a936-ea77430e392a",
+      "DisplaySetting": ""
     }
-  }
-]
+  ],
+  "streamers": [
+    {
+      "privateId": "15b94807-02e6-4a26-bd89-8c5be697301e",
+      "publicStreamerId": "175831187",
+      "name": "IronMouse",
+      "platform": "Twitch",
+      "streamerColor": "#e100ff",
+      "altColorHex": null,
+      "isLive": false
+    },
+    {
+      "privateId": "b0df0b6d-2aef-4d52-b2f5-43ce4c00aefa",
+      "publicStreamerId": "82350088",
+      "name": "Nyanners",
+      "platform": "Twitch",
+      "streamerColor": "#ffd500",
+      "altColorHex": "#e00000",
+      "isLive": false
+    },
+    {
+      "privateId": "ad19c74d-d418-4801-a80b-d43801d353fa",
+      "publicStreamerId": "96161915",
+      "name": "DooleyNoted",
+      "platform": "Twitch",
+      "streamerColor": "#532A9A",
+      "altColorHex": "#FD800A",
+      "isLive": false
+    },
+    {
+      "privateId": "f4417d1e-88bc-470a-84d3-6a143bdf91d9",
+      "publicStreamerId": "110059426",
+      "name": "Bao",
+      "platform": "Twitch",
+      "streamerColor": "#ec2222",
+      "altColorHex": "#00FFFF",
+      "isLive": false
+    },
+    {
+      "privateId": "d9b0e183-18ae-4f84-bce4-dbc21a9fc004",
+      "publicStreamerId": "100901794",
+      "name": "ShyLily",
+      "platform": "Twitch",
+      "streamerColor": "#e301f4",
+      "altColorHex": "#00FFFF",
+      "isLive": true
+    },
+    {
+      "privateId": "be7c46b3-0a02-4d80-a356-d1aa4fe309db",
+      "publicStreamerId": "183516302",
+      "name": "PufferPlays",
+      "platform": "Twitch",
+      "streamerColor": "#5860b8",
+      "altColorHex": "#00FFFF",
+      "isLive": false
+    },
+    {
+      "privateId": "3c3c9b6a-c093-4b3e-a7ec-d39c9a4e289b",
+      "publicStreamerId": "548281862",
+      "name": "CottonTailVA",
+      "platform": "Twitch",
+      "streamerColor": "#cb0606",
+      "altColorHex": "#00FFFF",
+      "isLive": false
+    },
+    {
+      "privateId": "3d0fdd10-2533-4f3e-93b3-178a54f29b12",
+      "publicStreamerId": "142726152",
+      "name": "Grizzy",
+      "platform": "Twitch",
+      "streamerColor": "#ffb100",
+      "altColorHex": "#00FFFF",
+      "isLive": false
+    },
+    {
+      "privateId": "03196fe6-b0bb-479a-9691-002d780ad4b8",
+      "publicStreamerId": "84634992",
+      "name": "LeeandLie",
+      "platform": "Twitch",
+      "streamerColor": "#00eeff",
+      "altColorHex": null,
+      "isLive": true
+    },
+    {
+      "privateId": "e240be81-d49a-4651-aef6-e70695fcb319",
+      "publicStreamerId": "41616317",
+      "name": "Bigpuffer",
+      "platform": "Twitch",
+      "streamerColor": "#9146FF",
+      "altColorHex": null,
+      "isLive": false
+    },
+    {
+      "privateId": "671514db-757f-4510-a936-ea77430e392a",
+      "publicStreamerId": "56938961",
+      "name": "Silvervale",
+      "platform": "Twitch",
+      "streamerColor": "#9146FF",
+      "altColorHex": null,
+      "isLive": false
+    },
+    {
+      "privateId": "97b3ad27-4d74-4948-9908-f808d07cf3df",
+      "publicStreamerId": "135056709",
+      "name": "dokibird",
+      "platform": "Twitch",
+      "streamerColor": "#9146FF",
+      "altColorHex": null,
+      "isLive": false
+    },
+    {
+      "privateId": "b720a8ba-7391-446b-be81-5280ed8875b9",
+      "publicStreamerId": "598403800",
+      "name": "JuniperActias",
+      "platform": "Twitch",
+      "streamerColor": "#a5dfa3",
+      "altColorHex": null,
+      "isLive": false
+    },
+    {
+      "privateId": "e213338d-2442-4d58-bc6b-1d063cb57224",
+      "publicStreamerId": "144548018",
+      "name": "Smiity",
+      "platform": "Twitch",
+      "streamerColor": "#f5e400",
+      "altColorHex": null,
+      "isLive": false
+    },
+    {
+      "privateId": "fdc8b11b-23a0-481b-b59d-b87861df10b3",
+      "publicStreamerId": "22562338",
+      "name": "Buffpup",
+      "platform": "Twitch",
+      "streamerColor": "#ffc800",
+      "altColorHex": null,
+      "isLive": false
+    },
+    {
+      "privateId": "2e5d175f-6ede-476c-aa57-5422fd424976",
+      "publicStreamerId": "1076927596",
+      "name": "EnyaIgnis",
+      "platform": "Twitch",
+      "streamerColor": "#ffcb0f",
+      "altColorHex": null,
+      "isLive": false
+    }
+  ]
+}
