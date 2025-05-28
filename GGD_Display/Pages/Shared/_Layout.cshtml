@@ -4,50 +4,64 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - GGD_Display</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GGD_Display.styles.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">GGD_Display</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Profile">Profile</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Settings">Settings</a>
-                        </li>
-                    </ul>
+        <nav class="bg-white shadow border-b w-full px-4 py-3 fixed top-0 left-0 z-40">
+            <div class="max-w-screen-xl mx-auto flex justify-between items-center">
+                <a href="/" class="text-xl font-semibold text-gray-800">GGD_Display</a>
+
+                <div class="space-x-4">
+                    <a class="text-gray-700 hover:text-purple-600" asp-area="" asp-page="/Index">Home</a>
+                    <a class="text-gray-700 hover:text-purple-600" asp-area="" asp-page="/Profile">Profile</a>
+                            <button onclick="openSettingsModal()" class="text-white bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">
+                                ⚙️ Settings
+                            </button>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+    <!-- ⚙️ Settings Modal (Bootstrap-based) -->
+    <div id="settingsModal"
+         class="modal fade"
+         tabindex="-1"
+         style="display: none; background-color: rgba(0,0,0,0.8); position: fixed; inset: 0; z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark text-light p-4">
+                <h2 class="modal-title mb-3">Settings</h2>
+
+                <div class="mb-3">
+                    <label class="form-label">Enable Advanced Options</label>
+                    <input type="checkbox" id="enableAdvancedSettings" onchange="toggleAdvancedSettings()" />
+                </div>
+
+                <div id="advancedSettingsSection" class="border-top pt-3 mt-3 hidden">
+                    <h4 class="mb-2">Advanced Tools</h4>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="refreshStreamerIds()">🔄 Refresh Streamer IDs</button>
+                </div>
+
+                <div class="text-end mt-4">
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="closeSettingsModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="pt-20">
+        @RenderBody()
     </div>
 
     <footer class="border-top footer text-muted">
         <div class="container">
             &copy; 2025 - GGD_Display - <a asp-area="" asp-page="/Privacy">Privacy</a>
-            <p>Current App Version: @Model.GetAppVersion()</p>
+            @* <p>Current App Version: @Model.GetAppVersion()</p> *@
         </div>
     </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)

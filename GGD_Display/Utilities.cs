@@ -1,67 +1,66 @@
-﻿using static GGD_Display.DisplayModels;
+﻿using GGD_Display.Models;
+using GGDTwitchAPI;
 using System.Text.Json;
 
 namespace GGD_Display
 {
     public class Utilities
     {
-
+        /// <summary>
+        /// Returns the current application version.
+        /// </summary>
+        /// <returns>String Version number</returns>
+        public static string GetAppVersion()
+        {
+            return "0.0.4.3a"; // read from appsettings.config later
+        }
 
         public static string RGBToHex(int r, int g, int b)
         {
             return $"#{r:X2}{g:X2}{b:X2}";
         }
 
-        private bool MigrateSettingsIfNeeded(AppSettings settings)
+        //private bool MigrateSettingsIfNeeded(AppSettings settings)
+        //{
+
+        //}
+
+        //public string GetStreamerNameForNode(int nodeId)
+        //{
+        //    var node = Canvases.FirstOrDefault(n => n.NodeId == nodeId);
+        //    var streamer = Streamers.FirstOrDefault(s => s.StreamerId == node?.LinkedStreamerId);
+        //    return streamer?.Name ?? $"Node {nodeId}";
+        //}
+        public static class AdvancedSaveUtils
         {
-            bool updated = false;
-
-            if (settings.Metadata == null)
+            public static async Task<int> RefreshStreamerIdsFromNamesAsync(TwitchApiService twitch)
             {
-                settings.Metadata = new Metadata
-                {
-                    Version = "0.0.1",
-                    LastUpdated = DateTime.UtcNow
-                };
-                updated = true;
-            }
+                var settings = FileController.LoadSettings();
 
-            if (settings.Metadata.Version == "0.0.1")
-            {
-                foreach (var canvas in settings.Canvases)
+                var streamersToUpdate = settings.Streamers
+                    .Where(s => string.IsNullOrWhiteSpace(s.PublicStreamerId) && !string.IsNullOrWhiteSpace(s.Name))
+                    .ToList();
+
+                if (!streamersToUpdate.Any())
+                    return 0;
+
+                var names = streamersToUpdate.Select(s => s.Name).ToList();
+                var resolved = await twitch.GetInitialTwitchData(names);
+
+                int updatedCount = 0;
+                foreach (var streamer in streamersToUpdate)
                 {
-                    if (canvas.ColorRGB.StartsWith("{")) // suspect it's an RGB JSON object
+                    var match = resolved.FirstOrDefault(r => r.Name.Equals(streamer.Name, StringComparison.OrdinalIgnoreCase));
+                    if (match != null)
                     {
-                        try
-                        {
-                            var colorObj = JsonSerializer.Deserialize<RGBColor>(canvas.ColorRGB);
-                            if (colorObj != null)
-                            {
-                                canvas.ColorRGB = $"#{colorObj.R:X2}{colorObj.G:X2}{colorObj.B:X2}";
-                                updated = true;
-                            }
-                        }
-                        catch
-                        {
-                            // fallback: default to gray if invalid format
-                            canvas.ColorRGB = "#CCCCCC";
-                            updated = true;
-                        }
+                        streamer.PublicStreamerId = match.ID;
+                        updatedCount++;
                     }
                 }
 
-                settings.Metadata.Version = _appVersion;
-                settings.Metadata.LastUpdated = DateTime.UtcNow;
+                FileController.SaveSettings(settings);
+                return updatedCount;
             }
-
-            return updated;
-        }
-
-        public string GetStreamerNameForNode(int nodeId)
-        {
-            var node = Canvases.FirstOrDefault(n => n.NodeId == nodeId);
-            var streamer = Streamers.FirstOrDefault(s => s.StreamerId == node?.LinkedStreamerId);
-            return streamer?.Name ?? $"Node {nodeId}";
         }
 
 

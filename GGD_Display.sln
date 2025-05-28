@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GGD_Display", "GGD_Display\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GGDTwitchAPI", "GDD_Twitch_API\GGDTwitchAPI.csproj", "{70CD5902-02FC-4200-8A32-1B9332D43253}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "GGD_LightController", "GGD_LightController\GGD_LightController.pyproj", "{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,14 @@ Global
 		{70CD5902-02FC-4200-8A32-1B9332D43253}.Release|ARM64.Build.0 = Release|ARM64
 		{70CD5902-02FC-4200-8A32-1B9332D43253}.Release|x86.ActiveCfg = Release|Any CPU
 		{70CD5902-02FC-4200-8A32-1B9332D43253}.Release|x86.Build.0 = Release|Any CPU
+		{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}.Debug|ARM32.ActiveCfg = Debug|Any CPU
+		{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}.Release|ARM32.ActiveCfg = Release|Any CPU
+		{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{B3D3676C-E1E9-47F2-B3A8-1CF29DCEA114}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

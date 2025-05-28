@@ -1,6 +1,8 @@
 ﻿
 # ChangeLog for GGD_Display
 
+## Version 0.0.0.3a - Adding JSON file functions to save and load the information. 
+
 ## Version 0.0.0.1a - Twitch Integration
 This version introduces the initial integration with Twitch, allowing users to display Twitch-related information on their GGD_Display.
 

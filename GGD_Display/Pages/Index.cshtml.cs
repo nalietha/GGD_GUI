@@ -1,86 +1,157 @@
 ﻿using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
-using static GGD_Display.DisplayModels;
+using GGD_Display.Models;
+using GGDTwitchAPI;
+using System.Diagnostics;
+using System.Text.Json.Serialization;
+using static GGD_Display.Utilities;
+
 
 
 namespace GGD_Display.Pages
 {
     public class IndexModel : PageModel
     {
-
-        private readonly string _saveFile = "wwwroot/data/save.json";
+        private readonly IHubContext<TwitchHub> _hub;
+        private readonly TwitchApiService _twitch;
+        private readonly ILogger<RefreshTwitchStatusService> _logger;
+        public IndexModel(
+            IHubContext<TwitchHub> hub,
+            TwitchApiService twitch,
+            ILogger<RefreshTwitchStatusService> logger)
+        {
+            _hub = hub;
+            _twitch = twitch;
+            _logger = logger;
+        }
 
         public List<NodeInfo> Canvases { get; set; } = new(); // for UI use
         public List<StreamerInfo> Streamers { get; set; } = new();
 
         public List<LightingMode> LightingModes { get; set; } = new()
-    {
-        new LightingMode { Name = "Pulse", Icon = "💡" },
-        new LightingMode { Name = "Wave", Icon = "🌊" },
-        new LightingMode { Name = "Static", Icon = "🔒" },
-        new LightingMode { Name = "Rainbow", Icon = "🌈" },
-        new LightingMode { Name = "Flash", Icon = "⚡" },
-    };
+        {
+            new LightingMode { Name = "Pulse", Icon = "💡" },
+            new LightingMode { Name = "Wave", Icon = "🌊" },
+            new LightingMode { Name = "Static", Icon = "🔒" },
+            new LightingMode { Name = "Rainbow", Icon = "🌈" },
+            new LightingMode { Name = "Flash", Icon = "⚡" },
+        };
 
         public void OnGet()
         {
-            CreateJSONSaveFile(); // Ensure file exists
-            LoadSettings();
+            var settings = FileController.LoadSettings();
+
+            Canvases = settings.Canvases ?? new List<NodeInfo>();
+            Streamers = settings.Streamers ?? new List<StreamerInfo>();
+
         }
-
-
-        private void LoadSettings()
+        public class UpdateNodeRequest
         {
-            if (System.IO.File.Exists(_saveFile))
-            {
-                try
-                {
-                    var json = System.IO.File.ReadAllText(_saveFile);
-                    var settings = JsonSerializer.Deserialize<AppSettings>(json, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
-
-                    if (settings != null)
-                    {
-                        // Load metadata (optional)
-                        // var version = settings.Metadata?.Version;
-
-                        // Load nodes into Canvases for UI
-                        Canvases = settings.Canvases ?? new();
-
-                        // Load streamers
-                        Streamers = settings.Streamers ?? new();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Log or handle file/JSON errors
-                    Console.WriteLine($"Failed to load settings: {ex.Message}");
-                }
-            }
-            else
-            {
-                // File not found — optionally create a default
-                Console.WriteLine("Save file not found. Consider calling CreateJSONSaveFile().");
-            }
+            [JsonPropertyName("nodeId")]
+            public int NodeId { get; set; }
+            [JsonPropertyName("privateId")]
+            public string PrivateId { get; set; }
         }
 
+        public class UpdateStreamerLinkRequest
+        {
+            [JsonPropertyName("nodeId")]
+            public int NodeId { get; set; }
+            [JsonPropertyName("privateId")]
+            public string PrivateId { get; set; }
+        }
+
+        public async Task<IActionResult> OnPostUpdateNodeStreamerAsync()
+        {
+            var body = await new StreamReader(Request.Body).ReadToEndAsync();
+            var update = JsonSerializer.Deserialize<UpdateStreamerLinkRequest>(body, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (update == null || string.IsNullOrWhiteSpace(update.PrivateId))
+                return new JsonResult(new { success = false, message = "Invalid input" });
+
+            var settings = FileController.LoadSettings();
+
+            var node = settings.Canvases.FirstOrDefault(n => n.NodeId == update.NodeId);
+            var streamer = settings.Streamers.FirstOrDefault(s => s.PrivateId == update.PrivateId);
+
+            if (node == null || streamer == null)
+                return new JsonResult(new { success = false, message = "Node or streamer not found" });
+
+            node.LinkedStreamerId = update.PrivateId;
+            FileController.SaveSettings(settings);
+
+            var colorHex = streamer.IsLive ? streamer.AltColorHex ?? streamer.StreamerColor : streamer.StreamerColor;
+
+            return new JsonResult(new
+            {
+                success = true,
+                colorHex,
+                streamerName = streamer.Name,
+                isLive = streamer.IsLive
+            });
+        }
+        public class UpdateNodeColorRequest
+        {
+            [JsonPropertyName("nodeId")]
+            public int NodeId { get; set; }
+
+            [JsonPropertyName("colorHex")]
+            public string ColorHex { get; set; } = "";
+
+            [JsonPropertyName("isAlt")]
+            public bool IsAlt { get; set; }
+        }
+
+        public async Task<IActionResult> OnPostUpdateNodeColorAsync([FromBody] UpdateNodeColorRequest request)
+        {
+            var settings = FileController.LoadSettings();
+
+            var node = settings.Canvases.FirstOrDefault(n => n.NodeId == request.NodeId);
+            if (node == null)
+                return new JsonResult(new { success = false, message = "Node not found" });
+
+            // Update node color only if it's a main color update
+            if (!request.IsAlt)
+                node.ColorHex = request.ColorHex;
+
+            if (!string.IsNullOrEmpty(node.LinkedStreamerId))
+            {
+                var streamer = settings.Streamers.FirstOrDefault(s => s.PrivateId == node.LinkedStreamerId);
+                if (streamer != null)
+                {
+                    if (request.IsAlt)
+                        streamer.AltColorHex = request.ColorHex;
+                    else
+                        streamer.StreamerColor = request.ColorHex;
+                }
+            }
+
+            FileController.SaveSettings(settings);
+
+            return new JsonResult(new { success = true });
+        }
+
+        public async Task<IActionResult> OnPostRefreshIdsAsync()
+        {
+            int updated = await AdvancedSaveUtils.RefreshStreamerIdsFromNamesAsync(_twitch); // Use your service
+            return new JsonResult(new { success = true, updated });
+        }
 
         public string GetStreamerNameForNode(int nodeId)
         {
             var node = Canvases.FirstOrDefault(n => n.NodeId == nodeId);
-            var streamer = Streamers.FirstOrDefault(s => s.StreamerId == node?.LinkedStreamerId);
+            var streamer = Streamers.FirstOrDefault(s => s.PublicStreamerId == node?.LinkedStreamerId);
             return streamer?.Name ?? $"Node {nodeId}";
         }
 
-        public void SaveCanvasColor(string canvasID, string colorCode)
-        {
-            // Open the save file and update the color for the indicated canvas ID
 
-        }
+
         /// <summary>
         /// Node ID normalization for display purposes. So that nodes start at top right and bottom right 
         /// Not sure this is needed as long as IDs are consistent in the JSON file.
@@ -91,77 +162,6 @@ namespace GGD_Display.Pages
         {
             return nodeId < 8 ? 15 - nodeId : nodeId - 8;
         }
-
-        private void CreateJSONSaveFile()
-        {
-            if (!System.IO.File.Exists(_saveFile))
-            {
-                var defaultSettings = new AppSettings
-                {
-                    Metadata = new Metadata
-                    {
-                        Version = GetAppVersion(),
-                        LastUpdated = DateTime.UtcNow
-                    },
-                    Canvases = Enumerable.Range(0, 16).Select(id => new NodeInfo
-                    {
-                        NodeId = id,
-                        ColorHex = "#000000",
-                        LinkedStreamerId = "",
-                        DisplaySetting = "default"
-                    }).ToList(),
-                    Streamers = new List<StreamerInfo>() // Empty by default
-                };
-
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                var json = JsonSerializer.Serialize(defaultSettings, options);
-                Directory.CreateDirectory(Path.GetDirectoryName(_saveFile)!);
-                System.IO.File.WriteAllText(_saveFile, json);
-            }
-        }
-
-
-        public string GetAppVersion()
-        {
-            return "0.0.0.3a"; // read from appsettings.config later
-        }
-
-        //private bool MigrateSettingsIfNeeded(AppSettings settings)
-        //{
-        //    bool updated = false;
-
-        //    if (settings.Metadata == null)
-        //    {
-        //        // Assume legacy or missing version info
-        //        settings.Metadata = new Metadata
-        //        {
-        //            Version = GetAppVersion(), // assume an old version
-        //            LastUpdated = DateTime.UtcNow
-        //        };
-        //        updated = true;
-        //    }
-
-        //    // Example migration from 0.0.1 to 1.0.0
-        //    //if (settings.Metadata.Version == "0.0.1")
-        //    //{
-        //    //    // Here you can apply any transformation needed
-        //    //    // For example, update all canvas colors from hex to RGB object if changed
-
-        //    //    // Update version
-        //    //    settings.Metadata.Version = _appVersion;
-        //    //    settings.Metadata.LastUpdated = DateTime.UtcNow;
-        //    //    updated = true;
-        //    //}
-
-        //    return updated;
-        //}
-
-        private void SaveSettings(AppSettings settings)
-        {
-            var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-            System.IO.File.WriteAllText(_saveFile, json);
-        }
-
 
     }
 

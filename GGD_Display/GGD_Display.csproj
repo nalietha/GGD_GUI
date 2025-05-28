@@ -9,10 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Utilities.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="ChangeLog.txt" />
   </ItemGroup>
 
@@ -20,6 +16,10 @@
     <Content Update="wwwroot\data\save.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GDD_Twitch_API\GGDTwitchAPI.csproj" />
   </ItemGroup>
 
 </Project>
