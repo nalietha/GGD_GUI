@@ -220,11 +220,16 @@ function updateLinkedStreamer(nodeId, privateId) {
                 if (colorBox) {
                     colorBox.style.backgroundColor = data.colorHex;
                 }
+                // update streamer name and link
+                const nameText = document.getElementById(`streamerNameText-${nodeId}`);
+                if (nameText) {
+                    nameText.textContent = data.streamerName ?? `Canvas ${nodeId}`;
+                }
 
-                // Update streamer name
-                const title = document.getElementById(`canvas-title-${nodeId}`);
-                if (title) {
-                    title.innerText = data.streamerName ?? `Canvas ${nodeId}`;
+                // link :: TODO: add the link to the streamers page in the json, so when more sites are added it can be updated 
+                const nameLink = document.getElementById(`streamerNameLink-${nodeId}`);
+                if (nameLink && data.streamerName) {
+                    nameLink.href = `https://twitch.tv/${data.streamerName}`;
                 }
 
                 // Update live status dot

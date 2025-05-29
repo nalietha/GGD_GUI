@@ -59,15 +59,16 @@
                     @if (!string.IsNullOrEmpty(linkedStreamer?.PublicStreamerId))
                     {
                         <a href="https://twitch.tv/@linkedStreamer.Name"
+                           id="streamerNameLink-@i"
                            target="_blank"
                            rel="noopener noreferrer"
                            class="text-m font-semibold underline hover:text-purple-600">
-                            @linkedStreamer.Name
+                            <span id="streamerNameText-@i">@linkedStreamer.Name</span>
                         </a>
                     }
                     else
                     {
-                        @($"Canvas {i}")
+                        <span id="streamerNameText-@i">Canvas @(i+1)</span>
                     }
 
                 </h3>
