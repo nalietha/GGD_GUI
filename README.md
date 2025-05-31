@@ -54,6 +54,25 @@ Watch the lights pulse to life when streamer mode is enabled.
 - WS2811-compatible LED strip
 - Power supply for LEDs
 
+<details>
+  <summary><strong>🔧 Parts & Links (Click to Expand)</strong></summary>
+
+  <br/>
+
+  Below are the core components used to build this project:
+
+  | Part                            | Description                                            | Link |
+  |---------------------------------|--------------------------------------------------------|------|
+  | **WS2811 RGB LED Strip**       | Individually addressable LED strip (5V logic level)    | [Buy on Amazon](https://www.amazon.com/dp/B00...) |
+  | **Raspberry Pi (4/zero2+ Models)**   | Controls the LEDs and runs the Python script           | [Official Site](https://www.raspberrypi.com/products/) |
+  | **5V 10A Power Supply**        | Powers the LED strip safely                            | [Buy on Amazon](https://www.amazon.com/dp/B08...) |
+  | **Custom Made Stand**          | Holds all 16 nodes in a structured display             | _Homemade — no commercial link_ |
+  | **Jumper Wires & Connectors**  | Wiring between Pi, power, and LED strip                | [Buy on Amazon](https://www.amazon.com/dp/B07...) |
+  | **MicroSD Card (16GB+)**       | Storage for Raspberry Pi OS and controller script      | [Buy on Amazon](https://www.amazon.com/dp/B06...) |
+
+</details>
+
+
 ### Software
 
 - .NET Core 3.1+ (for Web App)
