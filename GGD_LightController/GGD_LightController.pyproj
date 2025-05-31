@@ -4,7 +4,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>b3d3676c-e1e9-47f2-b3a8-1cf29dcea114</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>GGD_LightController.py</StartupFile>
+    <StartupFile>
+    </StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -21,7 +22,17 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GGD_LightController.py" />
+    <Compile Include="config_manager.py" />
+    <Compile Include="led_controller.py" />
+    <Compile Include="led_effects.py" />
+    <Compile Include="led_listener.py" />
+    <Compile Include="led_strategies.py" />
+    <Compile Include="led_utilities.py" />
+    <Compile Include="TwitchAPI\refresh_streamer_status.py" />
+    <Compile Include="TwitchAPI\twitch_api_service.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TwitchAPI\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
