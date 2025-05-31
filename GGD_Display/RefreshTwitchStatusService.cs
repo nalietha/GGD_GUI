@@ -12,6 +12,10 @@ namespace GGD_Display
         private readonly TwitchApiService _twitch;
         private readonly ILogger<RefreshTwitchStatusService> _logger;
 
+        // Flag to ensure we only send updates on the first run
+        private bool _firstRun = true;
+
+
         public RefreshTwitchStatusService(
             IHubContext<TwitchHub> hub,
             TwitchApiService twitch,
@@ -59,10 +63,16 @@ namespace GGD_Display
                             if (streamer.IsLive != isLive)
                             {
                                 streamer.IsLive = isLive;
+                            }
+
+                            if (_firstRun || streamer.IsLive != isLive)
+                            {
                                 await _hub.Clients.All.SendAsync("updateStreamer", streamer);
                             }
                         }
                     }
+
+                    _firstRun = false;
 
                     FileController.SaveSettings(settings);
                 }

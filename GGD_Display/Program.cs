@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.WebHost.UseUrls("http://localhost:5000");
 
 builder.Services.AddRazorPages();
 // JSON global declariotions

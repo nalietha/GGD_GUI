@@ -12,8 +12,8 @@ connection.on("updateStreamer", streamer => {
         if (dropdown && dropdown.value === streamer.privateId) {
             const liveDot = document.getElementById(`liveStatus-${i}`);
             if (liveDot) {
-                liveDot.classList.remove("bg-green-500", "bg-red-500");
-                liveDot.classList.add(streamer.isLive ? "bg-green-500" : "bg-red-500");
+                liveDot.classList.remove("bg-green-500", "bg-red-500", "animate-pulse");
+                liveDot.classList.add(streamer.isLive ? "bg-green-500 animate-pulse" : "bg-red-500");
                 liveDot.title = streamer.isLive ? "Live" : "Offline";
             }
         }
