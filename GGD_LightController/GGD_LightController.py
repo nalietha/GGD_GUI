@@ -9,7 +9,7 @@ LEDS_PER_NODE = 7
 LED_PIN = 18
 LED_FREQ_HZ = 800000
 LED_DMA = 10
-LED_BRIGHTNESS = 255
+LED_BRIGHTNESS = 64
 LED_INVERT = False
 LED_CHANNEL = 0
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     node_assignments = load_node_assignments()
 
     hub = HubConnectionBuilder()\
-        .with_url("http://your-raspberrypi-ip:5000/twitchhub")\
+        .with_url("http://localhost:5000/twitchhub")\
         .build()
 
     hub.on("updateStreamer", handle_streamer_update)

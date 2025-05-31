@@ -17,38 +17,13 @@
                 <div class="space-x-4">
                     <a class="text-gray-700 hover:text-purple-600" asp-area="" asp-page="/Index">Home</a>
                     <a class="text-gray-700 hover:text-purple-600" asp-area="" asp-page="/Profile">Profile</a>
-                            <button onclick="openSettingsModal()" class="text-white bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">
-                                ⚙️ Settings
-                            </button>
+                    <button onclick="openSettingsModal()" class="text-white bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">
+                        ⚙️ Settings
+                    </button>
                 </div>
             </div>
         </nav>
     </header>
-    <!-- ⚙️ Settings Modal (Bootstrap-based) -->
-    <div id="settingsModal"
-         class="modal fade"
-         tabindex="-1"
-         style="display: none; background-color: rgba(0,0,0,0.8); position: fixed; inset: 0; z-index: 1050;">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content bg-dark text-light p-4">
-                <h2 class="modal-title mb-3">Settings</h2>
-
-                <div class="mb-3">
-                    <label class="form-label">Enable Advanced Options</label>
-                    <input type="checkbox" id="enableAdvancedSettings" onchange="toggleAdvancedSettings()" />
-                </div>
-
-                <div id="advancedSettingsSection" class="border-top pt-3 mt-3 hidden">
-                    <h4 class="mb-2">Advanced Tools</h4>
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="refreshStreamerIds()">🔄 Refresh Streamer IDs</button>
-                </div>
-
-                <div class="text-end mt-4">
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="closeSettingsModal()">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
 
     <div class="pt-20">

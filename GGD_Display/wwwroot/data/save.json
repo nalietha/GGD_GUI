@@ -1,19 +1,19 @@
 {
   "metadata": {
     "Version": "0.0.4.3a",
-    "LastUpdated": "2025-05-27T17:38:32.1365795Z"
+    "LastUpdated": "2025-05-31T01:54:08.7907638Z"
   },
   "nodes": [
     {
       "NodeId": 0,
       "ColorHex": "",
-      "LinkedStreamerId": "15b94807-02e6-4a26-bd89-8c5be697301e",
+      "LinkedStreamerId": "b0df0b6d-2aef-4d52-b2f5-43ce4c00aefa",
       "DisplaySetting": ""
     },
     {
       "NodeId": 1,
-      "ColorHex": "#ffc800",
-      "LinkedStreamerId": "fdc8b11b-23a0-481b-b59d-b87861df10b3",
+      "ColorHex": "#c81414",
+      "LinkedStreamerId": "b720a8ba-7391-446b-be81-5280ed8875b9",
       "DisplaySetting": ""
     },
     {
@@ -49,7 +49,7 @@
     {
       "NodeId": 7,
       "ColorHex": "#cb0606",
-      "LinkedStreamerId": "3c3c9b6a-c093-4b3e-a7ec-d39c9a4e289b",
+      "LinkedStreamerId": "03196fe6-b0bb-479a-9691-002d780ad4b8",
       "DisplaySetting": ""
     },
     {
@@ -127,7 +127,7 @@
       "platform": "Twitch",
       "streamerColor": "#532A9A",
       "altColorHex": "#FD800A",
-      "isLive": false
+      "isLive": true
     },
     {
       "privateId": "f4417d1e-88bc-470a-84d3-6a143bdf91d9",
@@ -145,7 +145,7 @@
       "platform": "Twitch",
       "streamerColor": "#e301f4",
       "altColorHex": "#00FFFF",
-      "isLive": true
+      "isLive": false
     },
     {
       "privateId": "be7c46b3-0a02-4d80-a356-d1aa4fe309db",
@@ -163,7 +163,7 @@
       "platform": "Twitch",
       "streamerColor": "#cb0606",
       "altColorHex": "#00FFFF",
-      "isLive": false
+      "isLive": true
     },
     {
       "privateId": "3d0fdd10-2533-4f3e-93b3-178a54f29b12",
@@ -181,7 +181,7 @@
       "platform": "Twitch",
       "streamerColor": "#00eeff",
       "altColorHex": null,
-      "isLive": true
+      "isLive": false
     },
     {
       "privateId": "e240be81-d49a-4651-aef6-e70695fcb319",
@@ -190,7 +190,7 @@
       "platform": "Twitch",
       "streamerColor": "#9146FF",
       "altColorHex": null,
-      "isLive": false
+      "isLive": true
     },
     {
       "privateId": "671514db-757f-4510-a936-ea77430e392a",
@@ -217,7 +217,7 @@
       "platform": "Twitch",
       "streamerColor": "#a5dfa3",
       "altColorHex": null,
-      "isLive": false
+      "isLive": true
     },
     {
       "privateId": "e213338d-2442-4d58-bc6b-1d063cb57224",
@@ -233,7 +233,7 @@
       "publicStreamerId": "22562338",
       "name": "Buffpup",
       "platform": "Twitch",
-      "streamerColor": "#ffc800",
+      "streamerColor": "#c81414",
       "altColorHex": null,
       "isLive": false
     },
