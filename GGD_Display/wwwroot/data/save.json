@@ -1,7 +1,7 @@
 {
   "metadata": {
     "Version": "0.0.4.3a",
-    "LastUpdated": "2025-06-01T03:34:40.8648691Z"
+    "LastUpdated": "2025-06-01T18:04:44.0227328Z"
   },
   "nodes": [
     {
@@ -90,8 +90,8 @@
     },
     {
       "NodeId": 14,
-      "ColorHex": "#000080",
-      "LinkedStreamerId": "f4417d1e-88bc-470a-84d3-6a143bdf91d9",
+      "ColorHex": "#d5108d",
+      "LinkedStreamerId": "749197de-d568-4620-adce-7605f5801654",
       "DisplaySetting": ""
     },
     {
@@ -106,6 +106,7 @@
       "privateId": "15b94807-02e6-4a26-bd89-8c5be697301e",
       "publicStreamerId": "175831187",
       "name": "IronMouse",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#e100ff",
       "altColorHex": null,
@@ -115,6 +116,7 @@
       "privateId": "b0df0b6d-2aef-4d52-b2f5-43ce4c00aefa",
       "publicStreamerId": "82350088",
       "name": "Nyanners",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#ffd500",
       "altColorHex": "#e00000",
@@ -124,24 +126,17 @@
       "privateId": "ad19c74d-d418-4801-a80b-d43801d353fa",
       "publicStreamerId": "96161915",
       "name": "DooleyNoted",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#532A9A",
       "altColorHex": "#FD800A",
-      "isLive": true
-    },
-    {
-      "privateId": "f4417d1e-88bc-470a-84d3-6a143bdf91d9",
-      "publicStreamerId": "110059426",
-      "name": "Bao",
-      "platform": "Twitch",
-      "streamerColor": "#ec2222",
-      "altColorHex": "#00FFFF",
       "isLive": false
     },
     {
       "privateId": "d9b0e183-18ae-4f84-bce4-dbc21a9fc004",
       "publicStreamerId": "100901794",
       "name": "ShyLily",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#e301f4",
       "altColorHex": "#00FFFF",
@@ -151,6 +146,7 @@
       "privateId": "be7c46b3-0a02-4d80-a356-d1aa4fe309db",
       "publicStreamerId": "183516302",
       "name": "PufferPlays",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#5860b8",
       "altColorHex": "#00FFFF",
@@ -160,15 +156,17 @@
       "privateId": "3c3c9b6a-c093-4b3e-a7ec-d39c9a4e289b",
       "publicStreamerId": "548281862",
       "name": "CottonTailVA",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#cb0606",
       "altColorHex": "#00FFFF",
-      "isLive": true
+      "isLive": false
     },
     {
       "privateId": "3d0fdd10-2533-4f3e-93b3-178a54f29b12",
       "publicStreamerId": "142726152",
       "name": "Grizzy",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#ffb100",
       "altColorHex": "#00FFFF",
@@ -178,6 +176,7 @@
       "privateId": "03196fe6-b0bb-479a-9691-002d780ad4b8",
       "publicStreamerId": "84634992",
       "name": "LeeandLie",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#00eeff",
       "altColorHex": null,
@@ -187,15 +186,17 @@
       "privateId": "e240be81-d49a-4651-aef6-e70695fcb319",
       "publicStreamerId": "41616317",
       "name": "Bigpuffer",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#9146FF",
       "altColorHex": null,
-      "isLive": true
+      "isLive": false
     },
     {
       "privateId": "671514db-757f-4510-a936-ea77430e392a",
       "publicStreamerId": "56938961",
       "name": "Silvervale",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#9146FF",
       "altColorHex": null,
@@ -205,6 +206,7 @@
       "privateId": "97b3ad27-4d74-4948-9908-f808d07cf3df",
       "publicStreamerId": "135056709",
       "name": "dokibird",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#9146FF",
       "altColorHex": null,
@@ -214,6 +216,7 @@
       "privateId": "b720a8ba-7391-446b-be81-5280ed8875b9",
       "publicStreamerId": "598403800",
       "name": "JuniperActias",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#a5dfa3",
       "altColorHex": null,
@@ -223,6 +226,7 @@
       "privateId": "e213338d-2442-4d58-bc6b-1d063cb57224",
       "publicStreamerId": "144548018",
       "name": "Smiity",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#f5e400",
       "altColorHex": null,
@@ -232,6 +236,7 @@
       "privateId": "fdc8b11b-23a0-481b-b59d-b87861df10b3",
       "publicStreamerId": "22562338",
       "name": "Buffpup",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#c81414",
       "altColorHex": null,
@@ -241,17 +246,9 @@
       "privateId": "2e5d175f-6ede-476c-aa57-5422fd424976",
       "publicStreamerId": "1076927596",
       "name": "EnyaIgnis",
+      "displayName": "Enya Ignis AKA Punkalopi",
       "platform": "Twitch",
       "streamerColor": "#ffcb0f",
-      "altColorHex": null,
-      "isLive": false
-    },
-    {
-      "privateId": "48341f79-d1be-4ecf-898c-54940512a848",
-      "publicStreamerId": "3102991",
-      "name": "AxialMatt",
-      "platform": "Twitch",
-      "streamerColor": "#9146FF",
       "altColorHex": null,
       "isLive": true
     },
@@ -259,10 +256,21 @@
       "privateId": "4f3db8e4-208d-46a0-9209-1e035ad5bc2f",
       "publicStreamerId": "58660432",
       "name": "Cheesy",
+      "displayName": null,
       "platform": "Twitch",
       "streamerColor": "#9146FF",
       "altColorHex": null,
       "isLive": true
+    },
+    {
+      "privateId": "749197de-d568-4620-adce-7605f5801654",
+      "publicStreamerId": "110059426",
+      "name": "bao",
+      "displayName": "Bao",
+      "platform": "Twitch",
+      "streamerColor": "#d5108d",
+      "altColorHex": null,
+      "isLive": false
     }
   ]
 }

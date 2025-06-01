@@ -50,7 +50,7 @@ namespace GGD_Display.Pages
 
         public IActionResult OnGet()
         {
-            var settings = FileController.LoadSave();
+            var settings = FileController.LoadSaveData();
 
             Canvases = new List<NodeInfo>(); // loads them below
             Streamers = settings.Streamers ?? new List<StreamerInfo>();
@@ -147,7 +147,7 @@ namespace GGD_Display.Pages
             if (update == null || string.IsNullOrWhiteSpace(update.PrivateId))
                 return new JsonResult(new { success = false, message = "Invalid input" });
 
-            var settings = FileController.LoadSave();
+            var settings = FileController.LoadSaveData();
 
             var node = settings.Canvases.FirstOrDefault(n => n.NodeId == update.NodeId);
             var streamer = settings.Streamers.FirstOrDefault(s => s.PrivateId == update.PrivateId);
@@ -156,7 +156,7 @@ namespace GGD_Display.Pages
                 return new JsonResult(new { success = false, message = "Node or streamer not found" });
 
             node.LinkedStreamerId = update.PrivateId;
-            FileController.SaveFile(settings);
+            FileController.SaveFileData(settings);
 
             var colorHex = streamer.IsLive ? streamer.AltColorHex ?? streamer.StreamerColor : streamer.StreamerColor;
 
@@ -183,7 +183,7 @@ namespace GGD_Display.Pages
 
         public async Task<IActionResult> OnPostUpdateNodeColorAsync([FromBody] UpdateNodeColorRequest request)
         {
-            var _saveFile = FileController.LoadSave();
+            var _saveFile = FileController.LoadSaveData();
             var node = _saveFile.Canvases.FirstOrDefault(n => n.NodeId == request.NodeId);
 
             if (node == null)
@@ -205,7 +205,7 @@ namespace GGD_Display.Pages
                 }
             }
 
-            FileController.SaveFile(_saveFile);
+            FileController.SaveFileData(_saveFile);
 
             return new JsonResult(new { success = true });
         }
@@ -219,9 +219,15 @@ namespace GGD_Display.Pages
         public string GetStreamerNameForNode(int nodeId)
         {
             var node = Canvases.FirstOrDefault(n => n.NodeId == nodeId);
-            var streamer = Streamers.FirstOrDefault(s => s.PublicStreamerId == node?.LinkedStreamerId);
-            return streamer?.Name ?? $"Node {nodeId}";
+            var streamer = Streamers.FirstOrDefault(s => s.PrivateId == node?.LinkedStreamerId);
+
+            return !string.IsNullOrWhiteSpace(streamer?.DisplayName)
+                ? streamer.DisplayName
+                : !string.IsNullOrWhiteSpace(streamer?.Name)
+                    ? streamer.Name
+                    : $"Node {nodeId}";
         }
+
 
         public class EffectPayload
         {
@@ -230,46 +236,46 @@ namespace GGD_Display.Pages
             public string DisplaySetting { get; set; }
         }
 
-        public async Task<IActionResult> OnPostUpdateEffectAsync()
-        {
-            using var reader = new StreamReader(Request.Body);
-            var body = await reader.ReadToEndAsync();
+        //public async Task<IActionResult> OnPostUpdateEffectAsync()
+        //{
+        //    using var reader = new StreamReader(Request.Body);
+        //    var body = await reader.ReadToEndAsync();
 
-            var payload = JsonSerializer.Deserialize<EffectPayload>(body);
+        //    var payload = JsonSerializer.Deserialize<EffectPayload>(body);
 
-            if (payload == null)
-                return BadRequest();
+        //    if (payload == null)
+        //        return BadRequest();
 
-            // Load current save.json
-            var _saveFile = FileController.LoadSave();
-            var node = _saveFile.Canvases.FirstOrDefault(n => n.NodeId == payload.NodeId);
+        //    // Load current save.json
+        //    var _saveFile = FileController.LoadSave();
+        //    var node = _saveFile.Canvases.FirstOrDefault(n => n.NodeId == payload.NodeId);
 
 
-            var updated = nodes.Select(n =>
-            {
-                if (n.GetProperty("NodeId").GetInt32() == payload.NodeId)
-                {
-                    var obj = new Dictionary<string, object>
-                    {
-                        ["NodeId"] = payload.NodeId,
-                        ["ColorHex"] = payload.ColorHex,
-                        ["LinkedStreamerId"] = n.GetProperty("LinkedStreamerId").GetString(),
-                        ["DisplaySetting"] = payload.DisplaySetting
-                    };
-                    return obj;
-                }
-                else
-                {
-                    return JsonSerializer.Deserialize<Dictionary<string, object>>(n.GetRawText());
-                }
-            }).ToList();
+        //    var updated = nodes.Select(n =>
+        //    {
+        //        if (n.GetProperty("NodeId").GetInt32() == payload.NodeId)
+        //        {
+        //            var obj = new Dictionary<string, object>
+        //            {
+        //                ["NodeId"] = payload.NodeId,
+        //                ["ColorHex"] = payload.ColorHex,
+        //                ["LinkedStreamerId"] = n.GetProperty("LinkedStreamerId").GetString(),
+        //                ["DisplaySetting"] = payload.DisplaySetting
+        //            };
+        //            return obj;
+        //        }
+        //        else
+        //        {
+        //            return JsonSerializer.Deserialize<Dictionary<string, object>>(n.GetRawText());
+        //        }
+        //    }).ToList();
 
-            // Write back to file
-            var newJson = JsonSerializer.Serialize(new { metadata = root.GetProperty("metadata"), nodes = updated });
-            System.IO.File.WriteAllText(path, newJson);
+        //    // Write back to file
+        //    var newJson = JsonSerializer.Serialize(new { metadata = root.GetProperty("metadata"), nodes = updated });
+        //    System.IO.File.WriteAllText(path, newJson);
 
-            return new JsonResult(new { success = true });
-        }
+        //    return new JsonResult(new { success = true });
+        //}
 
 
 
@@ -290,6 +296,61 @@ namespace GGD_Display.Pages
             // Second row: previewIndex 8–15 maps to NodeId 8–15
             return previewIndex;
         }
+        #region Adult Settings
+        public class ToggleAdultSettingRequest
+        {
+            public bool Enabled { get; set; }
+        }
+
+        public async Task<IActionResult> OnPostToggleAdultSettingAsync([FromBody] ToggleAdultSettingRequest request)
+        {
+            var json = await System.IO.File.ReadAllTextAsync("appsettings.json");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement.Clone();
+
+            var updated = new Dictionary<string, object>();
+
+            // Copy existing root
+            foreach (var prop in root.EnumerateObject())
+            {
+                updated[prop.Name] = JsonSerializer.Deserialize<object>(prop.Value.GetRawText())!;
+            }
+
+            // Update the setting
+            if (updated.TryGetValue("GGD_Display", out var displayObj) && displayObj is JsonElement display)
+            {
+                var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(display.GetRawText())!;
+                var plugins = PluginLoader.LoadAdultSitePlugins();
+
+                dict["AdultContentCheckEnabled"] = request.Enabled;
+
+                if (request.Enabled)
+                {
+                    dict["AdultContent"] = new
+                    {
+                        SupportedPlatforms = plugins.Select(p => p.Platform),
+                        ApiKeys = plugins.Where(p => p.RequiresApiKey).ToDictionary(p => p.Platform, p => "")
+                    };
+                }
+                else
+                {
+                    dict.Remove("AdultContent");
+                }
+
+                updated["GGD_Display"] = dict;
+            }
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            var newJson = JsonSerializer.Serialize(updated, options);
+            await System.IO.File.WriteAllTextAsync("appsettings.json", newJson);
+
+            return new JsonResult(new { success = true });
+        }
+
+
+
+
+        #endregion
 
     }
 

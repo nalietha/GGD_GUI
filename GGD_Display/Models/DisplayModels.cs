@@ -6,7 +6,7 @@ namespace GGD_Display.Models
 
     public class Metadata
     {
-        public string? Version { get; set; }
+        public string? Version { get; set; } = Utilities.GetAppVersion();
         public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     }
 
@@ -28,6 +28,8 @@ namespace GGD_Display.Models
 
         [JsonPropertyName("name")]
         public string Name { get; set; }
+        [JsonPropertyName("displayName")]
+        public string DisplayName { get; set; }
 
         [JsonPropertyName("platform")]
         public string Platform { get; set; }
@@ -42,7 +44,7 @@ namespace GGD_Display.Models
         public bool IsLive { get; set; }
     }
 
-    public class AppSettings
+    public class AppSaveData
     {
         [JsonPropertyName("metadata")]
         public Metadata Metadata { get; set; } = new();
@@ -60,16 +62,27 @@ namespace GGD_Display.Models
         public string Icon { get; set; } // Ideally an emoji or short text representation
     }
 
-    public class Settings
-    {
-        public string DisplayMode { get; set; } = "static"; // Default display mode
-        public string Brightness { get; set; } = "100"; // Default brightness
-
-    }
     public class StreamerInputInfo
     {
         public string Username { get; set; }
         public string Platform { get; set; }
     }
+    public class GGDSettings
+    {
+        public bool StreamerModeEnabled { get; set; }
+        public bool AdultContentCheckEnabled { get; set; }
+        public AdultContentSettings? AdultContent { get; set; }
+    }
 
+    public class AdultContentSettings
+    {
+        public List<string> SupportedPlatforms { get; set; } = new();
+        public Dictionary<string, string> ApiKeys { get; set; } = new();
+    }
+    public class AdultPlatformPlugin
+    {
+        public string Platform { get; set; } = "";
+        public string ApiUrl { get; set; } = "";
+        public bool RequiresApiKey { get; set; }
+    }
 }

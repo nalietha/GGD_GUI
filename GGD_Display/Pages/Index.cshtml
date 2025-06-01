@@ -31,9 +31,9 @@
         : "#222222";
 
 
-        <div class="flex flex-col h-full justify-between">
+        <div class="flex flex-col h-full justify-between min-w-[160px]">
             <div id="canvas-@i"
-                 class="canvas-box relative max-w-full overflow-hidden"
+                 class="canvas-box relative max-w-full overflow-hidden "
                  style="transform-origin: @(i % 8 < 4 ? "left center" : "right center");"
                  onmouseenter="enlargeCanvas(@i)"
                  onmouseleave="shrinkCanvas(@i)"
@@ -63,7 +63,7 @@
                            target="_blank"
                            rel="noopener noreferrer"
                            class="text-m font-semibold underline hover:text-purple-600">
-                            <span id="streamerNameText-@i">@linkedStreamer.Name</span>
+                            <span id="streamerNameText-@i">@Model.GetStreamerNameForNode(i)</span>
                         </a>
                     }
                     else
@@ -91,7 +91,7 @@
                     </div>
                 </div>
 
-                <div class="relative z-50">
+                <div>
                     <!-- Hidden Pickers -->
                     <input type="color" id="colorPicker-@i" class="absolute hidden z-50"
                            onchange="updateNodeColor(@i, this.value, false)">

@@ -1,0 +1,17 @@
+[
+  {
+    "platform": "Chaturbate",
+    "apiUrl": "https://chaturbate.com/api/public/",
+    "requiresApiKey": true
+  },
+  {
+    "platform": "Stripchat",
+    "apiUrl": "https://stripchat.com/api/performer",
+    "requiresApiKey": true
+  },
+  {
+    "platform": "MyFreeCams",
+    "apiUrl": "",
+    "requiresApiKey": false
+  }
+]

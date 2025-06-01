@@ -1,4 +1,5 @@
 using GGD_Display;
+using GGD_Display.Models;
 using GGDTwitchAPI;
 using System.Text.Json.Serialization;
 
@@ -25,7 +26,10 @@ builder.Services.AddRazorPages().AddJsonOptions(options =>
     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
-// Add SignalR service
+builder.Services.Configure<GGDSettings>(builder.Configuration.GetSection("GGD_Display"));
+
+// Add SignalR service TODO: Remove as SignalR is no longer used: led_listener took over twitch live checks,
+// Application still has the twitch elements for management of Nodes and streamers.
 builder.Services.AddSignalR();
 builder.Services.AddHostedService<RefreshTwitchStatusService>();
 

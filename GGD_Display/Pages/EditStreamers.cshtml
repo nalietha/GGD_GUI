@@ -1,0 +1,42 @@
+﻿@page
+@model GGD_Display.Pages.EditStreamersModel
+@{
+    ViewData["Title"] = "Edit Streamers";
+}
+@Html.AntiForgeryToken()
+
+<h2 class="text-xl font-bold mb-4">Edit Streamers</h2>
+
+@foreach (var platformGroup in Model.GroupedStreamersByPlatform)
+{
+    <h3 class="text-xl font-semibold mt-6 mb-2 text-white">@platformGroup.Key</h3>
+    
+    @foreach (var streamer in platformGroup.Value)
+    {
+    <div class="border border-gray-600 rounded p-4 mb-3 bg-gray-800 text-white">
+        <form method="post" asp-page-handler="Update">
+            <input type="hidden" name="PrivateId" value="@streamer.PrivateId" />
+
+            <div class="mb-2">
+                <label><strong>Username: @streamer.Name</strong></label><br />
+                <label>Platform: @streamer.Platform</label>
+            </div>
+
+            <div class="mb-2">
+                <label>Display Name:</label><br />
+                <input type="text" name="DisplayName" value="@streamer.DisplayName" class="text-black px-2 py-1 rounded" />
+            </div>
+
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white mr-2">💾 Save</button>
+
+            <form method="post" asp-page-handler="Remove" class="inline">
+                <input type="hidden" name="PrivateId" value="@streamer.PrivateId" />
+                    <button class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+                            onclick="removeStreamer('@streamer.PrivateId')">
+                        🗑 Remove
+                    </button>
+            </form>
+        </form>
+    </div>
+}
+}

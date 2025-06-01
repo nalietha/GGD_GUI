@@ -39,7 +39,7 @@ namespace GGD_Display
         {
             public static async Task<int> RefreshStreamerIdsFromNamesAsync(TwitchApiService twitch)
             {
-                var settings = FileController.LoadSave();
+                var settings = FileController.LoadSaveData();
 
                 var streamersToUpdate = settings.Streamers
                     .Where(s => string.IsNullOrWhiteSpace(s.PublicStreamerId) && !string.IsNullOrWhiteSpace(s.Name))
@@ -62,11 +62,20 @@ namespace GGD_Display
                     }
                 }
 
-                FileController.SaveFile(settings);
+                FileController.SaveFileData(settings);
                 return updatedCount;
             }
         }
 
+        public static class PluginLoader
+        {
+            public static List<AdultPlatformPlugin> LoadAdultSitePlugins(string path = "plugins/adult_sites.json")
+            {
+                if (!File.Exists(path)) return new List<AdultPlatformPlugin>();
+                var json = File.ReadAllText(path);
+                return JsonSerializer.Deserialize<List<AdultPlatformPlugin>>(json) ?? new();
+            }
+        }
 
     }
 
