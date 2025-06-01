@@ -7,7 +7,7 @@ using static GGD_Display.Utilities;
 public static class FileController
 {
     private static readonly string _saveFile = "wwwroot/data/save.json";
-    public static AppSettings LoadSettings()
+    public static AppSettings LoadSave()
     {
         if (!File.Exists(_saveFile))
         {
@@ -33,7 +33,7 @@ public static class FileController
         return JsonSerializer.Deserialize<AppSettings>(json, options) ?? new AppSettings();
     }
 
-    public static void SaveSettings(AppSettings settings)
+    public static void SaveFile(AppSettings settings)
     {
         settings.Metadata.LastUpdated = DateTime.UtcNow;
         var options = new JsonSerializerOptions { WriteIndented = true };

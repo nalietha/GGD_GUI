@@ -1,7 +1,7 @@
 {
   "metadata": {
     "Version": "0.0.4.3a",
-    "LastUpdated": "2025-05-31T01:54:08.7907638Z"
+    "LastUpdated": "2025-06-01T03:34:40.8648691Z"
   },
   "nodes": [
     {
@@ -217,7 +217,7 @@
       "platform": "Twitch",
       "streamerColor": "#a5dfa3",
       "altColorHex": null,
-      "isLive": true
+      "isLive": false
     },
     {
       "privateId": "e213338d-2442-4d58-bc6b-1d063cb57224",
@@ -245,6 +245,24 @@
       "streamerColor": "#ffcb0f",
       "altColorHex": null,
       "isLive": false
+    },
+    {
+      "privateId": "48341f79-d1be-4ecf-898c-54940512a848",
+      "publicStreamerId": "3102991",
+      "name": "AxialMatt",
+      "platform": "Twitch",
+      "streamerColor": "#9146FF",
+      "altColorHex": null,
+      "isLive": true
+    },
+    {
+      "privateId": "4f3db8e4-208d-46a0-9209-1e035ad5bc2f",
+      "publicStreamerId": "58660432",
+      "name": "Cheesy",
+      "platform": "Twitch",
+      "streamerColor": "#9146FF",
+      "altColorHex": null,
+      "isLive": true
     }
   ]
 }

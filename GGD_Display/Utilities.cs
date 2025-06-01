@@ -20,6 +20,10 @@ namespace GGD_Display
             return $"#{r:X2}{g:X2}{b:X2}";
         }
 
+        public int Transform(int x)
+        {
+            return x < 8 ? 15 - x : x - 8;
+        }
         //private bool MigrateSettingsIfNeeded(AppSettings settings)
         //{
 
@@ -35,7 +39,7 @@ namespace GGD_Display
         {
             public static async Task<int> RefreshStreamerIdsFromNamesAsync(TwitchApiService twitch)
             {
-                var settings = FileController.LoadSettings();
+                var settings = FileController.LoadSave();
 
                 var streamersToUpdate = settings.Streamers
                     .Where(s => string.IsNullOrWhiteSpace(s.PublicStreamerId) && !string.IsNullOrWhiteSpace(s.Name))
@@ -58,7 +62,7 @@ namespace GGD_Display
                     }
                 }
 
-                FileController.SaveSettings(settings);
+                FileController.SaveFile(settings);
                 return updatedCount;
             }
         }

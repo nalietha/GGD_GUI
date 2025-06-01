@@ -10,9 +10,17 @@
 </head>
 <body>
     <header>
-        <nav class="bg-white shadow border-b w-full px-4 py-3 fixed top-0 left-0 z-40">
+        <nav id="mainNav" class="bg-white shadow border-b w-full px-4 py-3 fixed top-0 left-0 z-40">
             <div class="max-w-screen-xl mx-auto flex justify-between items-center">
-                <a href="/" class="text-xl font-semibold text-gray-800">GGD_Display</a>
+                <div class="space-x-4">
+                <a href="/" class="text-xl font-semibold text-gray-800">GGD Streamer</a>
+
+                <button onclick="openStreamerModal()" class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">
+                    ➕ Add Streamers
+                </button>
+                <!-- Preview Button -->
+                <button type="button" class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700" onclick="togglePreviewModal()">Preview</button>
+                </div>
 
                 <div class="space-x-4">
                     <a class="text-gray-700 hover:text-purple-600" asp-area="" asp-page="/Index">Home</a>
@@ -40,5 +48,46 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    @if (Context.Request.Path == "/" || Context.Request.Path == "/Index")
+    {
+        <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+            <div class="bg-white rounded-lg p-6 shadow-lg w-[90%] max-w-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold">LED Preview</h2>
+                    <button onclick="togglePreviewModal()" class="text-red-600 font-bold text-xl">&times;</button>
+                </div>
+
+                @if (ViewData["PreviewGridHtml"] is string html)
+                {
+                    @Html.Raw(html)
+                }
+                else
+                {
+                    <div>Preview not available.</div>
+                }
+            </div>
+        </div>
+
+    <!-- Add Streamer Modal -->
+    <div id="addStreamerModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+        <div class="bg-gray-800 text-white p-6 rounded-lg max-w-md w-full shadow-xl">
+            <h2 class="text-lg font-bold mb-4">Add Streamers</h2>
+
+            <textarea id="streamerInput" class="w-full text-black p-2 rounded" rows="4"
+                      placeholder="Enter streamer names or Twitch URLs (one per line)"></textarea>
+
+            <div class="flex justify-end mt-4 gap-2">
+                <button onclick="submitStreamers()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                    ➕ Add
+                </button>
+                <button onclick="closeStreamerModal()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">
+                    ✖ Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+    }
 </body>
+
 </html>

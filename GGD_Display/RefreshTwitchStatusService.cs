@@ -32,7 +32,7 @@ namespace GGD_Display
             {
                 try
                 {
-                    var settings = FileController.LoadSettings();
+                    var settings = FileController.LoadSave();
 
                     var linkedStreamerIds = settings.Canvases
                         .Select(n => n.LinkedStreamerId)
@@ -74,7 +74,7 @@ namespace GGD_Display
 
                     _firstRun = false;
 
-                    FileController.SaveSettings(settings);
+                    FileController.SaveFile(settings);
                 }
                 catch (Exception ex)
                 {

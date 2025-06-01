@@ -67,7 +67,7 @@ function confirmWifiChange() {
 // #endregion Disclaimers
 
 
-// #region Canvas Controlls
+// #region Canvas Controls
 function enlargeCanvas(id) {
     if (lockedCanvasId === null) {
         const el = document.getElementById('canvas-' + id);
@@ -88,35 +88,28 @@ function lockCanvas(id) {
 
     const el = document.getElementById('canvas-' + id);
     const icon = document.getElementById('lock-icon-' + id);
+    const nav = document.getElementById('mainNav');
 
     lockedCanvasId = id;
     el.classList.add('enlarged');
     icon.classList.remove('hidden');
+    nav.classList.add('nav-disabled');
 }
 
-function toggleLockCanvas(id) {
+function unlockCanvas(id) {
     const el = document.getElementById('canvas-' + id);
     const icon = document.getElementById('lock-icon-' + id);
+    const nav = document.getElementById('mainNav');
 
     if (lockedCanvasId === id) {
         // Unlock current
         lockedCanvasId = null;
         el.classList.remove('enlarged');
         icon.classList.add('hidden');
-    } else {
-        // Lock new, remove any existing lock
-        if (lockedCanvasId !== null) {
-            const prev = document.getElementById('canvas-' + lockedCanvasId);
-            const prevIcon = document.getElementById('lock-icon-' + lockedCanvasId);
-            prev?.classList.remove('enlarged');
-            prevIcon?.classList.add('hidden');
-        }
-
-        lockedCanvasId = id;
-        el.classList.add('enlarged');
-        icon.classList.remove('hidden');
+        nav.classList.remove('nav-disabled');
     }
 }
+// #endregion 
 
 function submitStreamers() {
     const input = document.getElementById("streamerInput").value;
@@ -200,6 +193,31 @@ function updateNodeColor(nodeId, hexColor, isAlt = false) {
         .catch(err => alert("Error updating color: " + err.message));
 }
 
+async function updateNodeEffect(nodeId, newColor, newEffect) {
+    const payload = {
+        nodeId: nodeId,
+        colorHex: newColor,
+        displaySetting: newEffect
+    };
+
+    const response = await fetch("/Index?handler=UpdateEffect", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "RequestVerificationToken": document.querySelector("input[name='__RequestVerificationToken']").value
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+        console.log("Node updated!");
+    } else {
+        console.error("Failed to update node.");
+    }
+}
+// #endregion 
+
+
 
 function updateLinkedStreamer(nodeId, privateId) {
     console.log("Sending streamer update:", { nodeId, privateId });
@@ -248,6 +266,8 @@ function updateLinkedStreamer(nodeId, privateId) {
 }
 
 
+
+
 // #region Settings and Options
 function openSettingsModal() {
     document.getElementById("settingsModal").style.display = "block";
@@ -293,4 +313,8 @@ function refreshStreamerIds() {
         .catch(err => alert("Error refreshing streamer IDs: " + err.message));
 }
 
+function togglePreviewModal() {
+    const modal = document.getElementById('previewModal');
+    if (modal) modal.classList.toggle('hidden');
+}
 // #endregion Settings and Options

@@ -135,7 +135,7 @@ namespace GGD_Display.Pages
             var names = input.Streamers.Select(ParseStreamerName).Distinct().ToList();
             var found = await _twitch.GetStreamersWithLiveStatus(names);
 
-            var settings = FileController.LoadSettings();
+            var settings = FileController.LoadSave();
             int added = 0;
 
             foreach (var streamer in found)
@@ -155,7 +155,7 @@ namespace GGD_Display.Pages
                 }
             }
 
-            FileController.SaveSettings(settings);
+            FileController.SaveFile(settings);
             return new JsonResult(new { success = true, added });
         }
 
