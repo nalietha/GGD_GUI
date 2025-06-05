@@ -13,12 +13,10 @@ A Raspberry Pi-powered LED lighting display synchronized with internet streamers
 - WS2811 LED support using GPIO on Raspberry Pi
 
 ## Showcase
-
-Experience the system in action with a look at the custom-built LED node hardware and display stand.
-
 ### 🔧 Custom LED Nodes
 
 Each node is built using WS2811-compatible RGB LEDs using DYImall 7LED Jewels, allowing for granular control and unique display modes per streamer or independent effect.
+Any addressable LED light will work for this, my custom nodes were built with a halleffect sensor input for a magetically activated led effect. which has not be implemented in this version of the GGD stand
 
 ![Custom LED Nodes](images/custom_led_nodes.jpg)
 
@@ -53,7 +51,7 @@ Watch the lights pulse to life when streamer mode is enabled.
 - Python Flask will support older models.
 - WS2811-compatible LED strip
 - Power supply for LEDs
-
+- 
 <details>
   <summary><strong>🔧 Parts & Links (Click to Expand)</strong></summary>
 
