@@ -15,6 +15,7 @@ A Raspberry Pi-powered LED lighting display synchronized with internet streamers
 ## Showcase
 ### 🔧 Custom LED Nodes
 Fun youtube edit 
+
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/uYOQbDJsaW0/0.jpg)](https://youtu.be/uYOQbDJsaW0 "Gamersupps Display Showcase")
 
 Each node is built using WS2811-compatible RGB LEDs using DYImall 7LED Jewels, allowing for granular control and unique display modes per streamer or independent effect.
