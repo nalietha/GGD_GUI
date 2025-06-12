@@ -60,16 +60,16 @@ Watch the lights pulse to life when streamer mode is enabled.
 
   <br/>
 
-  Below are the core components used to build this project:
+  Below are the core components used to build this project: I get no money for sharing these items, if cheaper elsewhere, tell me cause these get expensive 
 
   | Part                            | Description                                            | Link |
   |---------------------------------|--------------------------------------------------------|------|
-  | **WS2811 RGB LED Strip**       | Individually addressable LED strip (5V logic level)    | [Buy on Amazon](https://www.amazon.com/dp/B00...) |
-  | **Raspberry Pi (4/zero2+ Models)**   | Controls the LEDs and runs the Python script           | [Official Site](https://www.raspberrypi.com/products/) |
-  | **5V 10A Power Supply**        | Powers the LED strip safely                            | [Buy on Amazon](https://www.amazon.com/dp/B08...) |
+  | **WS2811 RGB LED Node**       | Individually addressable LED strip (5V logic level)    | [Buy on Amazon](https://a.co/d/6ISCJoT) |
+  | **Raspberry Pi (4/zero2+ Models)**   | Controls the LEDs and runs the Python script           | [Official Site](https://a.co/d/5F31hkN) |
   | **Custom Made Stand**          | Holds all 16 nodes in a structured display             | _Homemade — no commercial link_ |
+  | **Custom LED Node**      | Holds the DIYMall Jewel LED and simplifies wiring            | _Homeade _ no commercial link_ looking into how to share these files or custom order if wanted about $100 usd for 36 (including shipping) 36 Nodes makes 2 stands with 4 spares |
   | **Jumper Wires & Connectors**  | Wiring between Pi, power, and LED strip                | [Buy on Amazon](https://www.amazon.com/dp/B07...) |
-  | **MicroSD Card (16GB+)**       | Storage for Raspberry Pi OS and controller script      | [Buy on Amazon](https://www.amazon.com/dp/B06...) |
+  | **MicroSD Card (16GB+)**       | Storage for Raspberry Pi OS and controller script any size that can store a raspberry pi os is fine      | [Buy on Amazon](https://a.co/d/i84zci7) |
 
 </details>
 
