@@ -67,12 +67,17 @@ namespace GGD_Display.Models
         public string Username { get; set; }
         public string Platform { get; set; }
     }
-    public class GGDSettings
+
+    public class AppSettings
     {
+        public Metadata Metadata { get; set; } = new Metadata();
         public bool StreamerModeEnabled { get; set; }
         public bool AdultContentCheckEnabled { get; set; }
+        public string Mode { get; set; } = "static"; 
+        public int Brightness { get; set; } = 128; // Default brightness level
         public AdultContentSettings? AdultContent { get; set; }
     }
+ 
 
     public class AdultContentSettings
     {

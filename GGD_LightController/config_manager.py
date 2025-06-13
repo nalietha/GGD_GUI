@@ -37,3 +37,13 @@ class AppSettingsManager(FileSystemEventHandler):
         observer.schedule(self, path='.', recursive=False)
         observer.daemon = True
         observer.start()
+
+
+def read_brightness(filepath="appsettings.json", default=64):
+    try:
+        with open(filepath, "r") as f:
+            data = json.load(f)
+            return int(data.get("GGD_Display", {}).get("Brightness", default))
+    except Exception as e:
+        print(f"Error reading appsettings.json: {e}")
+        return default

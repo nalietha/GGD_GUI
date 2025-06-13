@@ -75,7 +75,7 @@ public static class FileController
         }
     }
 
-    public static void CreateAPPDATASaveFile()
+    public static void CreateAppdataSaveFile()
     {
         // This method is not implemented in the original code, but you can add logic here if needed.
         // It might be used to create a save file in a different location, like the user's AppData folder.
@@ -83,20 +83,38 @@ public static class FileController
 
     }
 
-    //public static AppSettings LoadAppSettings()
-    //{
+    public static AppSettings LoadAppSettings()
+    {
+        if (!File.Exists(_AppsettingsSavePath))
+        {
+            return new AppSettings
+            {
+                Metadata = new Metadata
+                {
+                    Version = GetAppVersion(),
+                    LastUpdated = DateTime.UtcNow
+                }
+            };
+        }
+        var json = File.ReadAllText(_AppsettingsSavePath);
 
-    //}
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
-    //public static AppSettings SaveAppSettings(AppSettings settings)
-    //{
+        return JsonSerializer.Deserialize<AppSettings>(json, options) ?? new AppSettings();
+    }
 
-    //    settings.Metadata.LastUpdated = DateTime.UtcNow;
-    //    var options = new JsonSerializerOptions { WriteIndented = true };
-    //    var json = JsonSerializer.Serialize(settings, options);
-    //    File.WriteAllText(_AppsettingsSavePath, json);
+    public static void SaveAppSettings(AppSettings settings)
+    {
 
-    //}
+        settings.Metadata.LastUpdated = DateTime.UtcNow;
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        var json = JsonSerializer.Serialize(settings, options);
+        File.WriteAllText(_AppsettingsSavePath, json);
+
+    }
 
 }
 

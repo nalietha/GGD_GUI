@@ -30,4 +30,9 @@
     <ProjectReference Include="..\GDD_Twitch_API\GGDTwitchAPI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="img\github\" />
+    <Folder Include="img\cups\" />
+  </ItemGroup>
+
 </Project>

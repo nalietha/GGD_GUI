@@ -1,23 +1,19 @@
 import time
 import json
-from TwitchAPI.twitch_api_service import TwitchAPIService
-from led_effects import pulse_mode, flash_node
 from rpi_ws281x import PixelStrip, Color
+
+# my imports
+from TwitchAPI.twitch_api_service import TwitchAPIService
+from led_effects import pulse_node, flash_node, startup_chase_effect
 from led_strategies import StreamerModeStrategy, DisplayEffectStrategy
-from led_utilities import transform_node_id, hex_to_color, strip, LEDS_PER_NODE
+from led_utilities import transform_node_id, hex_to_color, strip, LEDS_PER_NODE, LED_COUNT, get_node_range
+from config_manager import AppSettingsManager, read_brightness
 
 
 previous_live = {}  # sid -> bool
 SAVE_PATH = "/var/www/ggd_display/wwwroot/data/save.json"
 
-
-def set_node_color(node_id, color_hex):
-    physical = transform_node_id(node_id)
-    start = physical * LEDS_PER_NODE
-    color = hex_to_color(color_hex)
-    for i in range(LEDS_PER_NODE):
-        strip.setPixelColor(start + i, color)
-    strip.show()
+current_mode = {"value": "streamer"}  # or "gradient"
 
 
 
@@ -50,6 +46,7 @@ def load_assignments(path=SAVE_PATH):
         node_map.setdefault(sid, []).append(entry)
 
     return node_map
+
 
 def read_ids_from_appsettings(filepath):
     """Reads IDs from appsettings.json file.
@@ -108,7 +105,9 @@ def get_settings(key, term, filepath='appsettings.json'):
     except KeyError:
         print("Error: '{key}:{term}' key not found in {filepath}.")
         return None
+
 #region Content Checks
+
 def is_streamer_mode_enabled(path="appsettings.json"):
     try:
         with open(path, "r") as f:
@@ -126,7 +125,9 @@ def is_adult_check_enabled(path="appsettings.json"):
     except Exception as e:
         print(f"Error reading appsettings.json: {e}")
         return False
-#endregion 
+
+#endregion Content Checks
+
 
 
 
@@ -146,7 +147,7 @@ def run_poll_loop():
         clientIDs = read_ids_from_appsettings("appsettings.json")
         twitch = TwitchAPIService(clientIDs["ClientId"], clientIDs["ClientSecret"])
         twitch.initialize()
-        strategy = StreamerModeStrategy(twitch, previous_live, current_colors)
+        strategy = StreamerModeStrategy(twitch, previous_live, current_colors, current_mode)
         print("Streamer mode active.")
     else:
         strategy = DisplayEffectStrategy()
@@ -156,32 +157,35 @@ def run_poll_loop():
         # checks for any changes in the settings
         streamer_mode = config.get("Mode.StreamerEnabled", True)
         adult_check = config.get("Mode.AdultContentCheckEnabled", False)
+        # check for light changes
+        new_brightness = read_brightness()
+        strip.setBrightness(new_brightness)
 
+        # Re-apply all current colors so brightness change takes effect:
+        for i in range(LED_COUNT):
+            color = strip.getPixelColor(i)
+            strip.setPixelColor(i, color)  # set again with new brightness context
+
+        strip.show()
 
         assignments = load_assignments()
         strategy.update(assignments)
         time.sleep(10)
 
 
-def apply_display_effect(node_id, setting, color_hex):
-    setting = setting.lower()
-    if setting == "static":
-        set_node_color(node_id, color_hex)
-    elif setting == "pulse":
-        pulse_node(node_id, color_hex)
-    elif setting == "off":
-        set_node_color(node_id, "#000000")
-    else:
-        print(f"Unknown display setting '{setting}' on node {node_id}, defaulting to static")
-        set_node_color(node_id, color_hex)
-
 
 if __name__ == "__main__":
+    strip.begin()
+    # startup_chase_effect()
+
+
     try:
         run_poll_loop()
     except KeyboardInterrupt:
         print("Stopping. Clearing LEDs...")
         for i in range(LED_COUNT):
             strip.setPixelColor(i, Color(0, 0, 0))
+
         strip.show()
+          
 

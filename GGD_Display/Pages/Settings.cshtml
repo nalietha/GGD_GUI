@@ -4,114 +4,141 @@
     ViewData["Title"] = "Settings";
 }
 
+<div class="max-w-3xl mx-auto p-6 text-gray-800">
+    <h2 class="text-2xl font-bold text-white mb-6">Settings</h2>
 
-<div class="settings-container">
-    <h2>Settings</h2>
+    <form method="post">
+        <div class="mb-6 p-4 bg-gray-100 border rounded">
 
-    <!-- ⚙️ Settings Modal  -->
-    <div id="settingsModal"
-         class="modal fade"
-         tabindex="-1"
-         style="display: none; background-color: rgba(0,0,0,0.8); position: fixed; inset: 0; z-index: 1050;">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content bg-dark text-light p-4">
-                <h2 class="modal-title mb-3">Settings</h2>
 
-                <div class="mb-3">
-                    <label class="form-label">Enable Advanced Options</label>
-                    <input type="checkbox" id="enableAdvancedSettings" onchange="toggleAdvancedSettings()" />
+            @{
+                int min = 16, max = 255;
+                var ticks = new List<(int value, string label)>
+                        {
+                        (16, "Min"),
+                        (80, "Low"),
+                        (128, "Med"),
+                        (192, "High"),
+                        (255, "Max")
+                        };
+            }
+            <div class="bg-white text-black p-4 rounded shadow mb-6">
+                <label for="Brightness" class="block font-semibold mb-2">Brightness</label>
+
+                <!-- Min / Value / Max line -->
+                <div class="flex justify-between text-sm text-gray-700 mb-1">
+                    <span>Min: @min</span>
+                    <span id="brightnessValue" class="font-mono text-black">@Model.Brightness</span>
+                    <span>Max: @max</span>
                 </div>
 
+                <!-- Slider -->
+                <input type="range"
+                       id="Brightness"
+                       name="Brightness"
+                       min="@min"
+                       max="@max"
+                       step="1"
+                       value="@Model.Brightness"
+                       oninput="document.getElementById('brightnessValue').textContent = this.value"
+                       class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer
+                  [&::-webkit-slider-thumb]:appearance-none
+                  [&::-webkit-slider-thumb]:h-5
+                  [&::-webkit-slider-thumb]:w-5
+                  [&::-webkit-slider-thumb]:rounded-full
+                  [&::-webkit-slider-thumb]:bg-blue-600
+                  [&::-webkit-slider-thumb]:border-2
+                  [&::-webkit-slider-thumb]:border-white
+                  [&::-webkit-slider-thumb]:shadow" />
 
-                <div class="mb-3">
-                    <label for="privacy">
-                        Privacy: Show Online Status
-                        <span class="tooltip">
-                            &#9432;
-                            <span class="tooltiptext">Check this if you would like to enable full twitch integration.</span>
-                        </span>
-                    </label>
-                    <input type="checkbox" id="privacy">
-                </div>
-
-                <button class="accordion">Twitch Integration Disclaimer</button>
-                <div class="accordion-content">
-                    This application integrates with the Twitch API to provide enhanced functionality. When connected, we collect and temporarily store the following data from your Twitch account:<br><br>
-                    <ul>
-                        <li>Your Twitch username</li>
-                        <li>The list of channels you follow</li>
-                        <li>The list of channels you are subscribed to</li>
-                    </ul>
-                    This information is used <strong>only</strong> to display a personalized list on the homepage for quick and easy selection. None of this data is shared externally or used for any other purpose.
-                </div>
-
-                <button onclick="showWifiDisclaimer()">Change WiFi</button>
-                <div id="wifiDisclaimer" class="hidden">
-                    <div class="disclaimer">
-                        Only use when making known modifications to your network. Adding a new network will start a utility timer. If there is not a valid connection in 2 hours from the change, the Raspberry Pi will default to its own WiFi server and the network credentials must be reentered.<br><br>
-                        You can check the timer by returning to this page if you allowed cookies. You can use the reset button to force this change sooner.
-                    </div>
-                    <label><input type="checkbox" id="acknowledgeDisclaimer" onchange="toggleWifiSettings()"> I understand and acknowledge</label>
-
-                </div>
-
-                <button class="accordion">Privacy Disclaimer: WiFi Usage</button>
-                <div class="accordion-content">
-                    When you enter your WiFi SSID and password into this application, the credentials are used solely to connect a Raspberry Pi device to your wireless network.<br><br>
-                    The information is transmitted locally to the Raspberry Pi via this web server and <strong>is not stored, logged, or transmitted to any external servers or third parties</strong>.<br><br>
-                    This process is necessary for enabling the Raspberry Pi to access the internet for updates and to perform its designated functions. By proceeding, you acknowledge and accept that the device will attempt to join the provided network using the credentials you enter.
-                </div>
-
-                <div id="advancedSettingsSection" class="border-top pt-3 mt-3 hidden">
-                    <h4 class="mb-2">Advanced Tools</h4>
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="refreshStreamerIds()">🔄 Refresh Streamer IDs</button>
-
-                    <div class="mb-3">
-                        <form method="post" asp-page-handler="ToggleMode">
-                            <label for="content18">
-                                Content: Allow 18+ Checks
-
-                                <span class="tooltip">
-                                    &#9432;
-                                    <span class="tooltiptext">Enable this to allow age-restricted content that may be suitable only for viewers over 18.</span>
-                                </span>
-                            </label>
-                            <input type="checkbox" id="content18" @(Model.AdultContentCheckEnabled ? "checked" : "") />
-                            <label for="streamerMode">
-                                Streamer Mode Disabled
-
-                                <span class="tooltip">
-                                    &#9432;
-                                    <span class="tooltiptext">Enable this if you would like to have the streamer mode disabled.</span>
-                                </span>
-                            </label>
-                            <input type="checkbox" name="StreamerEnabled" @(Model.StreamerEnabled ? "checked" : "") />
-                            <button type="submit">Update</button>
-
-                        </form>
-                    </div>
-
-                    <div class="text-end mt-4">
-                        <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="closeSettingsModal()">Close</button>
-                    </div>
-                    <div id="wifiSettings" class="hidden">
-                        <div class="setting-column">
-                            <label for="wifiUsername">WiFi Username</label>
-                            <input type="text" id="wifiUsername" placeholder="Enter WiFi username">
+                <!-- Ticks and labels -->
+                <div class="relative mt-4 h-10 w-full">
+                    @foreach (var (value, label) in ticks)
+                    {
+                        var percent = ((value - min) / (double)(max - min)) * 100;
+                        <div class="absolute" style="left:@($"{percent}%"); transform: translateX(-50%);">
+                            <div class="w-px h-3 bg-gray-500 mx-auto"></div>
+                            <button type="button"
+                                    onclick="setBrightness(@value)"
+                                    class="text-xs text-gray-700 hover:underline mt-1">
+                                @label
+                            </button>
                         </div>
-
-                        <div class="setting-column">
-                            <label for="wifiPassword">WiFi Password</label>
-                            <input type="password" id="wifiPassword" placeholder="Enter WiFi password">
-                        </div>
-                        <button onclick="confirmWifiChange()">Confirm Change</button>
-                    </div>
+                    }
                 </div>
             </div>
+
+        <div class="mb-6">
+            <label class="inline-flex items-center">
+                <input type="checkbox" name="StreamerEnabled" class="mr-2" @(Model.StreamerEnabled ? "checked" : "") />
+                Disable Streamer Mode
+            </label>
+            <p class="text-sm text-gray-600">Disable if you want the system to run without live streamer checks.</p>
         </div>
-    </div>
 
+        <div class="mb-6">
+            <label class="inline-flex items-center">
+                    <input id="ckbx_AdultContent" type="checkbox" name="AdultContentCheckEnabled" class="mr-2" @(Model.AdultContentCheckEnabled ? "checked" : "") onchange="toggleAdultContent()" />
+                Allow 18+ Content Checks
+            </label>
+            <p class="text-sm text-gray-600">Enables age-restricted streamer platform integrations.</p>
+        </div>
+
+        <div class="mb-6">
+            <label class="font-semibold">Privacy: Show Online Status</label>
+            <input type="checkbox" id="privacy" class="ml-2" />
+            <p class="text-sm text-gray-500">Enable full Twitch integration visibility.</p>
+        </div>
+
+        </div>
+        <div class="mb-6 p-4 bg-gray-100 border rounded">
+            <h3 class="font-semibold mb-2">Twitch Integration Disclaimer</h3>
+            <p class="text-sm">This app uses Twitch API to temporarily retrieve:</p>
+            <ul class="list-disc pl-6 text-sm text-gray-700">
+                <li>Your Twitch username</li>
+                <li>Followed channels</li>
+                <li>Subscribed channels</li>
+            </ul>
+            <p class="text-sm mt-2">None of this data is stored or shared externally.</p>
+        </div>
+
+        <div class="mb-6 p-4 bg-gray-100 border rounded">
+            <h3 class="font-semibold mb-2">WiFi Disclaimer</h3>
+            <p class="text-sm mb-2">
+                <strong>NOT IMPLEMENTED</strong> Network changes start a 2-hour utility timer. If not connected in time, the Pi will fall back to AP mode. You can reset it manually.
+            </p>
+            <label class="inline-flex items-center">
+                <input type="checkbox" id="acknowledgeDisclaimer" class="mr-2" />
+                I understand and acknowledge
+            </label>
+        </div>
+
+        <div id="wifiSettings" class="mb-6 p-4 border rounded bg-gray-50">
+            <h3 class="font-semibold mb-2">WiFi Configuration</h3>
+            <div class="mb-3">
+                <label for="wifiUsername" class="block"><strong>NOT IMPLEMENTED</strong>WiFi Username</label>
+                <input type="text" id="wifiUsername" name="wifiUsername" class="w-full border p-2 rounded" placeholder="Enter SSID" />
+            </div>
+            <div class="mb-3">
+                <label for="wifiPassword" class="block">WiFi Password</label>
+                <input type="password" id="wifiPassword" name="wifiPassword" class="w-full border p-2 rounded" placeholder="Enter password" />
+            </div>
+        </div>
+
+        <div class="mb-6 p-4 bg-gray-100 border rounded">
+            <h3 class="font-semibold mb-2">Privacy Disclaimer: WiFi Usage</h3>
+            <p class="text-sm">
+                WiFi credentials are transmitted locally to your Raspberry Pi. They are not logged, stored, or sent to any external services.
+            </p>
+        </div>
+
+        <div class="flex justify-between mt-6">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+                💾 Save Settings
+            </button>
+            <button type="button" onclick="location.reload()" class="text-gray-500 hover:text-black">
+                Cancel
+            </button>
+        </div>
+    </form>
 </div>
-
-
-

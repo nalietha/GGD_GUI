@@ -20,15 +20,19 @@
                 </button>
                 <!-- Preview Button -->
                 <button type="button" class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700" onclick="togglePreviewModal()">Preview</button>
+                <button id="toggleMode" class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700" onclick="setAppMode(this.value)">
+                    ⏻ on/off
+                </button>
                 </div>
+
 
                 <div class="space-x-4">
                     <a class="text-gray-700 hover:text-purple-600" asp-area="" asp-page="/Index">Home</a>
                     <a class="text-gray-700 hover:text-purple-600" asp-area="" asp-page="/Profile">Profile</a>
                     <a class="text-gray-700 hover:text-purple-600" asp-area="" asp-page="/EditStreamers">Edit Streamers</a>
-                    <button onclick="openSettingsModal()" class="text-white bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">
+                    <a class="text-white bg-gray-700 px-3 py-1 rounded hover:bg-gray-600" asp-page="/Settings">
                         ⚙️ Settings
-                    </button>
+                    </a>
                 </div>
             </div>
         </nav>
@@ -39,12 +43,18 @@
         @RenderBody()
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - GGD_Display - <a asp-area="" asp-page="/Privacy">Privacy</a>
-            @* <p>Current App Version: @Model.GetAppVersion()</p> *@
+<footer class="border-t text-gray-500 text-sm py-4 mt-8">
+    <div class="container mx-auto px-4 flex flex-row flex-wrap justify-between items-center gap-4">
+        <div>
+            &copy; 2025 - GGD_Display -
+            <a href="/Privacy" class="text-blue-500 hover:underline">Privacy</a>
         </div>
-    </footer>
+        <div>
+            Current App Version: @Utilities.GetAppVersion()
+        </div>
+        <a href="/Bugs" class="text-blue-500 hover:underline">Report Bugs</a>
+    </div>
+</footer>
 
     <script src="~/js/site.js" asp-append-version="true"></script>
 
@@ -88,6 +98,110 @@
             </div>
         </div>
     </div>
+
+        @* Settings modal *@
+        @* <div id="settingsModal"
+         class="modal fade"
+         tabindex="-1"
+         style="display: none; background-color: rgba(0,0,0,0.8); position: fixed; inset: 0; z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark text-light p-4">
+                <h2 class="modal-title mb-3">Settings</h2>
+
+                <div class="mb-3">
+                    <label class="form-label">Enable Advanced Options</label>
+                    <input type="checkbox" id="enableAdvancedSettings" onchange="toggleAdvancedSettings()" />
+                </div>
+
+
+                <div class="mb-3">
+                    <label for="privacy">
+                        Privacy: Show Online Status
+                        <span class="tooltip">
+                            &#9432;
+                            <span class="tooltiptext">Check this if you would like to enable full twitch integration.</span>
+                        </span>
+                    </label>
+                    <input type="checkbox" id="privacy">
+                </div>
+
+                <button class="accordion">Twitch Integration Disclaimer</button>
+                <div class="accordion-content">
+                    This application integrates with the Twitch API to provide enhanced functionality. When connected, we collect and temporarily store the following data from your Twitch account:<br><br>
+                    <ul>
+                        <li>Your Twitch username</li>
+                        <li>The list of channels you follow</li>
+                        <li>The list of channels you are subscribed to</li>
+                    </ul>
+                    This information is used <strong>only</strong> to display a personalized list on the homepage for quick and easy selection. None of this data is shared externally or used for any other purpose.
+                </div>
+
+                <button onclick="showWifiDisclaimer()">Change WiFi</button>
+                <div id="wifiDisclaimer" class="hidden">
+                    <div class="disclaimer">
+                        Only use when making known modifications to your network. Adding a new network will start a utility timer. If there is not a valid connection in 2 hours from the change, the Raspberry Pi will default to its own WiFi server and the network credentials must be reentered.<br><br>
+                        You can check the timer by returning to this page if you allowed cookies. You can use the reset button to force this change sooner.
+                    </div>
+                    <label><input type="checkbox" id="acknowledgeDisclaimer" onchange="toggleWifiSettings()"> I understand and acknowledge</label>
+
+                </div>
+
+                <button class="accordion">Privacy Disclaimer: WiFi Usage</button>
+                <div class="accordion-content">
+                    When you enter your WiFi SSID and password into this application, the credentials are used solely to connect a Raspberry Pi device to your wireless network.<br><br>
+                    The information is transmitted locally to the Raspberry Pi via this web server and <strong>is not stored, logged, or transmitted to any external servers or third parties</strong>.<br><br>
+                    This process is necessary for enabling the Raspberry Pi to access the internet for updates and to perform its designated functions. By proceeding, you acknowledge and accept that the device will attempt to join the provided network using the credentials you enter.
+                </div>
+
+                <div id="advancedSettingsSection" class="border-top pt-3 mt-3 hidden">
+                    <h4 class="mb-2">Advanced Tools</h4>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="refreshStreamerIds()">🔄 Refresh Streamer IDs</button>
+
+                    <div class="mb-3">
+                        <form method="post" asp-page-handler="ToggleMode">
+                            <label for="content18">
+                                Content: Allow 18+ Checks
+
+                                <span class="tooltip">
+                                    &#9432;
+                                    <span class="tooltiptext">Enable this to allow age-restricted content that may be suitable only for viewers over 18.</span>
+                                </span>
+                            </label>
+                            <input type="checkbox" id="content18" @(Model.AdultContentCheckEnabled ? "checked" : "") />
+                            <label for="streamerMode">
+                                Streamer Mode Disabled
+
+                                <span class="tooltip">
+                                    &#9432;
+                                    <span class="tooltiptext">Enable this if you would like to have the streamer mode disabled.</span>
+                                </span>
+                            </label>
+                            <input type="checkbox" name="StreamerEnabled" @(Model.StreamerEnabled ? "checked" : "") />
+                            <button type="submit">Update</button>
+
+                        </form>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="closeSettingsModal()">Close</button>
+                    </div>
+                    <div id="wifiSettings" class="hidden">
+                        <div class="setting-column">
+                            <label for="wifiUsername">WiFi Username</label>
+                            <input type="text" id="wifiUsername" placeholder="Enter WiFi username">
+                        </div>
+
+                        <div class="setting-column">
+                            <label for="wifiPassword">WiFi Password</label>
+                            <input type="password" id="wifiPassword" placeholder="Enter WiFi password">
+                        </div>
+                        <button onclick="confirmWifiChange()">Confirm Change</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> *@
+
     }
 </body>
 

@@ -1,7 +1,9 @@
 import time
 from rpi_ws281x import Color
-from led_layout import transform_node_id, LEDS_PER_NODE, strip  # assumed existing
-from led_utilities import transform_node_id, hex_to_color, strip, LEDS_PER_NODE, get_node_range
+from colorsys import hsv_to_rgb
+
+
+from led_utilities import transform_node_id, hex_to_color, strip, LEDS_PER_NODE, get_node_range, LED_COUNT
 
 # === Simple Effects ===
 
@@ -24,6 +26,18 @@ def blink(node_id, color_hex, duration=1.0, repeat=3):
         time.sleep(duration / 2)
 
 # === Complex Effects ===
+def apply_static_gradient(brightness=0.2):
+    print("Applying static gradient across nodes...")
+
+    for node_id in range(16):
+        hue = node_id / 16.0
+        r, g, b = hsv_to_rgb(hue, 1.0, 0.2)
+        color = Color(int(r * 255), int(g * 255), int(b * 255))
+        start = transform_node_id(node_id) * LEDS_PER_NODE
+        for i in range(LEDS_PER_NODE):
+            strip.setPixelColor(start + i, color)
+    strip.show()
+
 
 def pulsate(node_id, color1_hex, color2_hex, speed=0.15, cycles=5):
     c1 = hex_to_color(color1_hex)
@@ -112,7 +126,49 @@ def flash_node(node_id, color_hex):
     strip.show()
 
 
+def startup_chase_effect(colors=["#ff0000", "#00ff00", "#0000ff"], rounds=3, delay=0.1):
+    def animate():
+        print("Running startup animation...")
+
+        node_count = 16
+        sequence = list(range(node_count))  # Logical order
+
+        for r in range(rounds):
+            for step in range(node_count):
+                for i, node_id in enumerate(sequence):
+                    color = colors[(step + i) % len(colors)]
+                    set_node_color(node_id, color)
+                time.sleep(delay)
+
+        # Clear after final loop
+        for node_id in range(node_count):
+            set_node_color(node_id, "#000000")
+
+        print("Startup animation complete.")
+
+    Thread(target=animate, daemon=True).start()
+
+
 # === Helpers ===
+def set_node_color(node_id, color_hex):
+    physical = transform_node_id(node_id)
+    start = physical * LEDS_PER_NODE
+    color = hex_to_color(color_hex)
+    for i in range(LEDS_PER_NODE):
+        strip.setPixelColor(start + i, color)
+    strip.show()
+
+def apply_display_effect(node_id, setting, color_hex):
+    setting = setting.lower()
+    if setting == "static":
+        set_node_color(node_id, color_hex)
+    elif setting == "pulse":
+        pulse_node(node_id, color_hex)
+    elif setting == "off":
+        set_node_color(node_id, "#000000")
+    else:
+        print(f"Unknown display setting '{setting}' on node {node_id}, defaulting to static")
+        set_node_color(node_id, color_hex)
 
 
 def wheel(pos):

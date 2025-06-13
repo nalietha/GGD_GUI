@@ -1,6 +1,6 @@
 ﻿
 let lockedCanvasId = null;
-
+// #region Global event listeners
 // SignalR connection setup and management
 //const connection = new signalR.HubConnectionBuilder()
 //    .withUrl("/twitchhub")
@@ -21,7 +21,7 @@ let lockedCanvasId = null;
 //});
 
 //connection.start();
-// #region Global event listeners
+
 document.addEventListener('dblclick', () => {
     if (lockedCanvasId !== null) {
         unlockCanvas(lockedCanvasId);
@@ -37,6 +37,7 @@ document.addEventListener('click', function (e) {
     });
 });
 // #endregion Global event listeners
+
 
 // #region Accordion functionality
 const accordions = document.querySelectorAll(".accordion");
@@ -58,7 +59,6 @@ function toggleAccordion(button) {
 }
 
 // #endregion Accordion functionality
-
 
 
 // #region Disclaimers
@@ -265,6 +265,12 @@ function openStreamerModal() {
     const modal = document.getElementById("addStreamerModal");
     modal.classList.remove("hidden");
     modal.classList.add("flex");
+    setTimeout(() => {
+        const textarea = document.getElementById("streamerInput");
+        if (textarea) {
+            textarea.focus();
+        }
+    }, 50); // short delay to ensure visibility
 }
 
 function closeStreamerModal() {
@@ -360,8 +366,16 @@ function removeStreamer(privateId) {
 
 
 // #region Settings and Options
+function setBrightness(value) {
+    const slider = document.getElementById("Brightness");
+    const display = document.getElementById("brightnessValue");
+    slider.value = value;
+    display.textContent = value;
+}
 function openSettingsModal() {
     document.getElementById("settingsModal").style.display = "block";
+
+
 }
 
 function closeSettingsModal() {
@@ -393,7 +407,20 @@ function togglePreviewModal() {
     if (modal) modal.classList.toggle('hidden');
 }
 
-function toggleAdultContentSetting(isEnabled) {
+function toggleAdultContent() {
+    // Get the current check setting to base the isEnabled on
+    AdultCheckElem = getElementById("ckbx_AdultContent");
+    var isEnabled;
+    if (AdultCheckElem.IsChecked) {
+        // Adult content is allowed
+        isEnabled = true;
+    }
+    else {
+        // Adult content is not allowed
+        isEnabled = false;
+    }
+
+
     fetch('/Settings?handler=ToggleAdultSetting', {
         method: 'POST',
         headers: {
@@ -412,3 +439,46 @@ function toggleAdultContentSetting(isEnabled) {
 
 
 // #endregion Settings and Options
+
+
+// #region Lighting controls
+function setAppMode(mode) {
+    fetch("/api/settings/mode", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+        },
+        body: JSON.stringify({ mode })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                console.log("Mode updated:", mode);
+            } else {
+                alert("Failed to update mode: " + data.message);
+            }
+        });
+}
+
+function toggleOffOn() {
+    fetch("/api/settings/toggle", {
+        method: "POST",
+        headers: {
+            "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                console.log("Toggled state:", data.isOn ? "On" : "Off");
+            } else {
+                alert("Failed to toggle state: " + data.message);
+            }
+        });
+
+}
+
+
+
+// #endregion Lighting controls

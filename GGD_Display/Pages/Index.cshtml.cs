@@ -277,6 +277,21 @@ namespace GGD_Display.Pages
         //    return new JsonResult(new { success = true });
         //}
 
+        public class UpdateModeRequest
+        {
+            public string Mode { get; set; } = "on";
+        }
+
+        public IActionResult OnPostSetMode([FromBody] UpdateModeRequest request)
+        {
+            var settings = FileController.LoadAppSettings();
+            settings.Mode = request.Mode.ToLower() == "off" ? "off" : "on";
+            FileController.SaveAppSettings(settings);
+
+            return new JsonResult(new { success = true });
+        }
+
+
 
 
         /// <summary>
@@ -296,61 +311,7 @@ namespace GGD_Display.Pages
             // Second row: previewIndex 8–15 maps to NodeId 8–15
             return previewIndex;
         }
-        #region Adult Settings
-        public class ToggleAdultSettingRequest
-        {
-            public bool Enabled { get; set; }
-        }
 
-        public async Task<IActionResult> OnPostToggleAdultSettingAsync([FromBody] ToggleAdultSettingRequest request)
-        {
-            var json = await System.IO.File.ReadAllTextAsync("appsettings.json");
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement.Clone();
-
-            var updated = new Dictionary<string, object>();
-
-            // Copy existing root
-            foreach (var prop in root.EnumerateObject())
-            {
-                updated[prop.Name] = JsonSerializer.Deserialize<object>(prop.Value.GetRawText())!;
-            }
-
-            // Update the setting
-            if (updated.TryGetValue("GGD_Display", out var displayObj) && displayObj is JsonElement display)
-            {
-                var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(display.GetRawText())!;
-                var plugins = PluginLoader.LoadAdultSitePlugins();
-
-                dict["AdultContentCheckEnabled"] = request.Enabled;
-
-                if (request.Enabled)
-                {
-                    dict["AdultContent"] = new
-                    {
-                        SupportedPlatforms = plugins.Select(p => p.Platform),
-                        ApiKeys = plugins.Where(p => p.RequiresApiKey).ToDictionary(p => p.Platform, p => "")
-                    };
-                }
-                else
-                {
-                    dict.Remove("AdultContent");
-                }
-
-                updated["GGD_Display"] = dict;
-            }
-
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            var newJson = JsonSerializer.Serialize(updated, options);
-            await System.IO.File.WriteAllTextAsync("appsettings.json", newJson);
-
-            return new JsonResult(new { success = true });
-        }
-
-
-
-
-        #endregion
 
     }
 

@@ -23,7 +23,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="config_manager.py" />
-    <Compile Include="led_controller.py" />
     <Compile Include="led_effects.py" />
     <Compile Include="led_listener.py" />
     <Compile Include="led_strategies.py" />
