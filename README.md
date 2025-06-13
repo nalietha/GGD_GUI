@@ -21,7 +21,7 @@ Fun youtube edit
 Each node is built using WS2811-compatible RGB LEDs using DYImall 7LED Jewels, allowing for granular control and unique display modes per streamer or independent effect.
 Any addressable LED light will work for this, my custom nodes were built with a halleffect sensor input for a magetically activated led effect. which has not be implemented in this version of the GGD stand
 
-![Custom LED Nodes](img/github/LightNodesFromConception.jpg)
+![Custom LED Nodes](GGD_Display/img/github/LightNodesFromConception.jpg)
 
 ### 🖼️ Display Stand
 
@@ -103,21 +103,21 @@ Watch the lights pulse to life when streamer mode is enabled.
 Step 1a: mark out on a 4in by 1.5in board the center for 8 cups, each cup has a max width of 4in, the base is just shy of 3in.
 First hole is shallow (3mm) at 3 inches wide
 Second hole is 1.2 inch deep by 2 9/16ths this ledge is what holds the arylic disc. 
-![Step 1a Board cut with a 3in 3mm deep hole in the center of a 4in board](img/github/Step1a.jpg)
-![Step 1b Board cut deeper with a 2 9/16th auger blade](img/github/Step1b.jpg)
+![Step 1a Board cut with a 3in 3mm deep hole in the center of a 4in board](GGD_Display/img/github/Step1a.jpg)
+![Step 1b Board cut deeper with a 2 9/16th auger blade](GGD_Display/img/github/Step1b.jpg)
 
 Step 2 (not pictured) is to drill wiring holes in the back, Router out a channel that connects the holes to the center of the cut outs.
 Also sand and stain the wood
 
 Step 3 route wires, each node has 3 going in 3 going out fished into the next node for series connections. 
 The extra 8 wires here is for the megnetic signal that I am working on for the tubs (or a coaster for a cup)
-![Step 3a Stained black board with wires fit though 8 holes in the front, channel cut in the back to hold the wires](img/github/Step3a.jpg)
-![Step 3b close up of the wires capped with jst headers](img/github/Step3b.jpg)
+![Step 3a Stained black board with wires fit though 8 holes in the front, channel cut in the back to hold the wires](GGD_Display/img/github/Step3a.jpg)
+![Step 3b close up of the wires capped with jst headers](GGD_Display/img/github/Step3b.jpg)
 
 Step 4a: mount the light nodes, I am using my custom PCB board but using the circular one from above would work here as well (my nodes have the megnatic detection in them is really the only differance)
 Step 4b: place the 3in aryilic disks into the holes, They should fit flush with the top of the board, If not sand down or place something in the space if you cut too deep. (can also sand down to the right measurement if not stained yet)
-![Step 4a fit the light nodes into the holes and test the lights TEST THE LIGHTS](img/github/Step4a.jpg)
-![Step 4b fit the aryclic discs into the holes](img/github/Step4b.jpg)
+![Step 4a fit the light nodes into the holes and test the lights TEST THE LIGHTS](GGD_Display/img/github/Step4a.jpg)
+![Step 4b fit the aryclic discs into the holes](GGD_Display/img/github/Step4b.jpg)
 
 Step 4: (Optional) I sanded the clear arylic disks to give them a frosted look and notched them by sanding away a side of the circle so I can replace nodes easier during prototyping.
 
