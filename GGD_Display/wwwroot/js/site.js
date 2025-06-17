@@ -372,6 +372,7 @@ function setBrightness(value) {
     slider.value = value;
     display.textContent = value;
 }
+
 function openSettingsModal() {
     document.getElementById("settingsModal").style.display = "block";
 
@@ -408,18 +409,8 @@ function togglePreviewModal() {
 }
 
 function toggleAdultContent() {
-    // Get the current check setting to base the isEnabled on
-    AdultCheckElem = getElementById("ckbx_AdultContent");
-    var isEnabled;
-    if (AdultCheckElem.IsChecked) {
-        // Adult content is allowed
-        isEnabled = true;
-    }
-    else {
-        // Adult content is not allowed
-        isEnabled = false;
-    }
-
+    // Get the current check setting to base the ckbx_AdultContent is checked
+    const isChecked = document.getElementById("ckbx_AdultContent").checked;
 
     fetch('/Settings?handler=ToggleAdultSetting', {
         method: 'POST',
@@ -427,7 +418,7 @@ function toggleAdultContent() {
             'Content-Type': 'application/json',
             'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
         },
-        body: JSON.stringify({ enabled: isEnabled })
+        body: JSON.stringify({ enabled: isChecked })
     }).then(res => res.json())
         .then(data => {
             if (!data.success) {
@@ -436,14 +427,34 @@ function toggleAdultContent() {
         });
 }
 
+function toggleStreamerMode() {
+    // Get the current check setting to base the ckbx_StreamerMode is checked
+    const isChecked = document.getElementById("ckbx_StreamerMode").checked;
 
+    fetch('/Settings?handler=ToggleStreamerMode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        },
+        body: JSON.stringify({ enabled: true }) // or false
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Streamer mode toggled');
+            } else {
+                console.error('Failed to toggle streamer mode');
+            }
+        });
+}
 
 // #endregion Settings and Options
 
 
 // #region Lighting controls
 function setAppMode(mode) {
-    fetch("/api/settings/mode", {
+    fetch("/Settings?handler=SetLightMode", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -461,8 +472,9 @@ function setAppMode(mode) {
         });
 }
 
+// TODO: Implement actual toggle logic for on/off state in led_listner.py
 function toggleOffOn() {
-    fetch("/api/settings/toggle", {
+    fetch("/Settings?handler=ToggleOnOff", {
         method: "POST",
         headers: {
             "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value

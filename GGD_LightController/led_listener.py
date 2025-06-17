@@ -108,11 +108,13 @@ def get_settings(key, term, filepath='appsettings.json'):
 
 #region Content Checks
 
+
 def is_streamer_mode_enabled(path="appsettings.json"):
+    
     try:
         with open(path, "r") as f:
             data = json.load(f)
-            return data.get("Mode", {}).get("StreamerEnabled", True)
+            return data.get("GGD_Display", {}).get("StreamerEnabled", True)
     except Exception as e:
         print(f"Error reading appsettings.json: {e}")
         return True
@@ -121,7 +123,7 @@ def is_adult_check_enabled(path="appsettings.json"):
     try:
         with open(path, "r") as f:
             data = json.load(f)
-            return data.get("Mode", {}).get("AdultContentCheckEnabled", False)
+            return data.get("GGD_Display", {}).get("AdultContentCheckEnabled", False)
     except Exception as e:
         print(f"Error reading appsettings.json: {e}")
         return False

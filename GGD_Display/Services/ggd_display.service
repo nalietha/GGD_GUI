@@ -1,0 +1,16 @@
+# /etc/systemd/system/ggd_display.service
+[Unit]
+Description=GGD Display ASP.NET Core App
+After=network.target
+
+[Service]
+WorkingDirectory=/var/www/ggd_display
+ExecStart=/var/www/ggd_display/GGD_Display
+Restart=always
+RestartSec=10
+SyslogIdentifier=ggd_display
+User=root
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+[Install]
+WantedBy=multi-user.target

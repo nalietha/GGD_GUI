@@ -26,7 +26,7 @@ builder.Services.AddRazorPages().AddJsonOptions(options =>
     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
-builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("GGD_Display"));
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("GGDDisplay"));
 
 // Add SignalR service TODO: Remove as SignalR is no longer used: led_listener took over twitch live checks,
 // Application still has the twitch elements for management of Nodes and streamers.

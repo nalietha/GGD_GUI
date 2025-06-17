@@ -43,7 +43,7 @@ def read_brightness(filepath="appsettings.json", default=64):
     try:
         with open(filepath, "r") as f:
             data = json.load(f)
-            return int(data.get("GGD_Display", {}).get("Brightness", default))
+            return int(data.get("GGDDisplay", {}).get("Brightness", default))
     except Exception as e:
         print(f"Error reading appsettings.json: {e}")
         return default

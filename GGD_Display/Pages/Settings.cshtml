@@ -4,6 +4,7 @@
     ViewData["Title"] = "Settings";
 }
 
+@Html.AntiForgeryToken()
 <div class="max-w-3xl mx-auto p-6 text-gray-800">
     <h2 class="text-2xl font-bold text-white mb-6">Settings</h2>
 
@@ -70,7 +71,7 @@
 
         <div class="mb-6">
             <label class="inline-flex items-center">
-                <input type="checkbox" name="StreamerEnabled" class="mr-2" @(Model.StreamerEnabled ? "checked" : "") />
+                    <input id="ckbx_StreamerMode" type="checkbox" name="StreamerEnabled" class="mr-2" @(Model.StreamerEnabled ? "checked" : "") onchange="toggleStreamerMode()" />
                 Disable Streamer Mode
             </label>
             <p class="text-sm text-gray-600">Disable if you want the system to run without live streamer checks.</p>

@@ -12,7 +12,7 @@ namespace GGD_Display
         /// <returns>String Version number</returns>
         public static string GetAppVersion()
         {
-            return "1.5.11b"; // read from appsettings.config later
+            return "1.6.0"; 
         }
 
         public static string RGBToHex(int r, int g, int b)

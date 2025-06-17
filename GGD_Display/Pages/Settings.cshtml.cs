@@ -30,7 +30,7 @@ namespace GGD_Display.Pages
             var json = System.IO.File.ReadAllText(path);
             var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
 
-            if (data.TryGetValue("GGD_Display", out var ggdDisplayElem))
+            if (data.TryGetValue("GGDDisplay", out var ggdDisplayElem))
             {
                 var ggdDisplay = ggdDisplayElem.Deserialize<Dictionary<string, JsonElement>>();
 
@@ -51,10 +51,10 @@ namespace GGD_Display.Pages
             var json = System.IO.File.ReadAllText(path);
             var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
 
-            if (!data.ContainsKey("GGD_Display"))
-                return BadRequest("GGD_Display section missing.");
+            if (!data.ContainsKey("GGDDisplay"))
+                return BadRequest("GGDDisplay section missing.");
 
-            var ggdDisplay = data["GGD_Display"].Deserialize<Dictionary<string, object>>();
+            var ggdDisplay = data["GGDDisplay"].Deserialize<Dictionary<string, object>>();
 
             ggdDisplay["StreamerModeEnabled"] = StreamerEnabled;
             ggdDisplay["AdultContentCheckEnabled"] = AdultContentCheckEnabled;
@@ -64,7 +64,7 @@ namespace GGD_Display.Pages
             // ggdDisplay["Mode"] = "static";
 
             // Put updated section back into the root
-            data["GGD_Display"] = JsonSerializer.Deserialize<JsonElement>(
+            data["GGDDisplay"] = JsonSerializer.Deserialize<JsonElement>(
                 JsonSerializer.Serialize(ggdDisplay)
             );
 
@@ -82,7 +82,7 @@ namespace GGD_Display.Pages
 
         public async Task<IActionResult> OnPostToggleAdultSettingAsync([FromBody] ToggleAdultSettingRequest request)
         {
-            var json = await System.IO.File.ReadAllTextAsync("appsettings.json");
+            var json = await System.IO.File.ReadAllTextAsync("appsettings.json");   
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement.Clone();
 
@@ -95,7 +95,7 @@ namespace GGD_Display.Pages
             }
 
             // Update the setting
-            if (updated.TryGetValue("GGD_Display", out var displayObj) && displayObj is JsonElement display)
+            if (updated.TryGetValue("GGDDisplay", out var displayObj) && displayObj is JsonElement display)
             {
                 var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(display.GetRawText())!;
                 var plugins = PluginLoader.LoadAdultSitePlugins();
@@ -115,7 +115,7 @@ namespace GGD_Display.Pages
                     dict.Remove("AdultContent");
                 }
 
-                updated["GGD_Display"] = dict;
+                updated["GGDDisplay"] = dict;
             }
 
             var options = new JsonSerializerOptions { WriteIndented = true };
@@ -124,8 +124,20 @@ namespace GGD_Display.Pages
 
             return new JsonResult(new { success = true });
         }
+        
+        public class StreamerModeToggleRequest
+        {
+            public bool Enabled { get; set; }
+        }
 
+        public IActionResult OnPostToggleStreamerMode([FromBody] StreamerModeToggleRequest request)
+        {
+            var settings = FileController.LoadAppSettings();
+            settings.StreamerModeEnabled = request.Enabled;
+            FileController.SaveAppSettings(settings);
 
+            return new JsonResult(new { success = true });
+        }
 
 
         #endregion

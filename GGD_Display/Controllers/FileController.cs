@@ -79,42 +79,43 @@ public static class FileController
     {
         // This method is not implemented in the original code, but you can add logic here if needed.
         // It might be used to create a save file in a different location, like the user's AppData folder.
-        Debug.WriteLine("CreateAPPDATASaveFile is not implemented yet.");
+        Debug.WriteLine("Create APPDATA Save File is not implemented yet.");
 
     }
 
-    public static AppSettings LoadAppSettings()
+    public static GGDDisplaySettings LoadAppSettings()
     {
-        if (!File.Exists(_AppsettingsSavePath))
-        {
-            return new AppSettings
-            {
-                Metadata = new Metadata
-                {
-                    Version = GetAppVersion(),
-                    LastUpdated = DateTime.UtcNow
-                }
-            };
-        }
-        var json = File.ReadAllText(_AppsettingsSavePath);
+        var path = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+        var json = File.ReadAllText(path);
+        var root = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+        return root != null && root.TryGetValue("GGDDisplay", out var section)
+            ? JsonSerializer.Deserialize<GGDDisplaySettings>(section.GetRawText())!
+            : new GGDDisplaySettings();
+    }
 
+    public static void SaveAppSettings(GGDDisplaySettings updatedGGDDisplay)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+        var json = File.ReadAllText(path);
+
+        // Parse full JSON file
+        using var doc = JsonDocument.Parse(json);
+        var root = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+
+        // Replace or insert GGDDisplay section
+        root["GGDDisplay"] = updatedGGDDisplay;
+
+        // Serialize and save full object
         var options = new JsonSerializerOptions
         {
-            PropertyNameCaseInsensitive = true
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        return JsonSerializer.Deserialize<AppSettings>(json, options) ?? new AppSettings();
+        var updatedJson = JsonSerializer.Serialize(root, options);
+        File.WriteAllText(path, updatedJson);
     }
 
-    public static void SaveAppSettings(AppSettings settings)
-    {
-
-        settings.Metadata.LastUpdated = DateTime.UtcNow;
-        var options = new JsonSerializerOptions { WriteIndented = true };
-        var json = JsonSerializer.Serialize(settings, options);
-        File.WriteAllText(_AppsettingsSavePath, json);
-
-    }
 
 }
 

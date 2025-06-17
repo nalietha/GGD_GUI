@@ -1,6 +1,14 @@
 ﻿
 # ChangeLog for GGD_Display
 
+## Version 1.6.0 - Appsettings and displaysettings seperated.
+Relized appsettings was doubling as two layers to the appsettings.json heirarcy
+split AppSettings Model to have the roots of the appsettings file.
+Added GGDDisplaySettings Model to have the GGD_Display items under it.
+
+## Version 1.5.11b - 
+
+
 ## Version 0.0.0.3a - Adding JSON file functions to save and load the information. 
 
 ## Version 0.0.0.1a - Twitch Integration

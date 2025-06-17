@@ -68,6 +68,7 @@ namespace GGD_Display.Models
         public string Platform { get; set; }
     }
 
+    // This class is used to store application settings in appsettings.json
     public class AppSettings
     {
         public Metadata Metadata { get; set; } = new Metadata();
@@ -77,7 +78,18 @@ namespace GGD_Display.Models
         public int Brightness { get; set; } = 128; // Default brightness level
         public AdultContentSettings? AdultContent { get; set; }
     }
- 
+
+    public class GGDDisplaySettings
+    {
+        public bool StreamerModeEnabled { get; set; } = false;
+        public bool AdultContentCheckEnabled { get; set; } = false;
+        public string Mode { get; set; } = "static";
+
+        public int Brightness { get; set; } = 128;
+        public AdultContentSettings? AdultContent { get; set; }
+
+    }
+
 
     public class AdultContentSettings
     {

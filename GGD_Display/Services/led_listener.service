@@ -1,0 +1,15 @@
+[Unit]
+Description=LED Listener for Twitch Display
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/piDev/GamerDisplayWithNet/led_listener.py
+WorkingDirectory=/home/piDev/GamerDisplayWithNet
+StandardOutput=journal
+Restart=on-failure
+PIDFile=/run/led_listener.pid
+User=root
+Environment=PYTHONUNBUFFERED=1
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
