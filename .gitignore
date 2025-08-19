@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /GDD_Twitch_API/appsettings.json
+/GGD_Display/appsettings.json
+/GDD_Twitch_API/web.config

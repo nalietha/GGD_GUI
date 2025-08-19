@@ -1,7 +1,7 @@
 {
   "metadata": {
     "Version": "0.0.4.3a",
-    "LastUpdated": "2025-06-17T02:43:28.8952832Z"
+    "LastUpdated": "2025-08-18T00:40:37.104753Z"
   },
   "nodes": [
     {
@@ -110,7 +110,7 @@
       "platform": "Twitch",
       "streamerColor": "#e100ff",
       "altColorHex": null,
-      "isLive": true
+      "isLive": false
     },
     {
       "privateId": "b0df0b6d-2aef-4d52-b2f5-43ce4c00aefa",
@@ -120,7 +120,7 @@
       "platform": "Twitch",
       "streamerColor": "#ffd500",
       "altColorHex": "#e00000",
-      "isLive": false
+      "isLive": true
     },
     {
       "privateId": "ad19c74d-d418-4801-a80b-d43801d353fa",
