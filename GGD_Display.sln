@@ -11,6 +11,8 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "GGD_LightController", "GGD_
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "GGD_Flask", "GGD_Flask\GGD_Flask.pyproj", "{C9218FA5-9AA8-483F-860E-808925FEA663}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Streamer_Scraper", "Streamer_Scraper\Streamer_Scraper.pyproj", "{4920C2BF-CEB9-4523-890C-59264AA64CBA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,14 @@ Global
 		{C9218FA5-9AA8-483F-860E-808925FEA663}.Release|ARM64.Build.0 = Release|Any CPU
 		{C9218FA5-9AA8-483F-860E-808925FEA663}.Release|x86.ActiveCfg = Release|Any CPU
 		{C9218FA5-9AA8-483F-860E-808925FEA663}.Release|x86.Build.0 = Release|Any CPU
+		{4920C2BF-CEB9-4523-890C-59264AA64CBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4920C2BF-CEB9-4523-890C-59264AA64CBA}.Debug|ARM32.ActiveCfg = Debug|Any CPU
+		{4920C2BF-CEB9-4523-890C-59264AA64CBA}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{4920C2BF-CEB9-4523-890C-59264AA64CBA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4920C2BF-CEB9-4523-890C-59264AA64CBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4920C2BF-CEB9-4523-890C-59264AA64CBA}.Release|ARM32.ActiveCfg = Release|Any CPU
+		{4920C2BF-CEB9-4523-890C-59264AA64CBA}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{4920C2BF-CEB9-4523-890C-59264AA64CBA}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

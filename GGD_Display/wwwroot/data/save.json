@@ -1,7 +1,7 @@
 {
   "metadata": {
     "Version": "0.0.4.3a",
-    "LastUpdated": "2025-08-18T00:40:37.104753Z"
+    "LastUpdated": "2025-08-27T00:37:34.5037067Z"
   },
   "nodes": [
     {
@@ -120,7 +120,7 @@
       "platform": "Twitch",
       "streamerColor": "#ffd500",
       "altColorHex": "#e00000",
-      "isLive": true
+      "isLive": false
     },
     {
       "privateId": "ad19c74d-d418-4801-a80b-d43801d353fa",
@@ -130,7 +130,7 @@
       "platform": "Twitch",
       "streamerColor": "#532A9A",
       "altColorHex": "#FD800A",
-      "isLive": true
+      "isLive": false
     },
     {
       "privateId": "d9b0e183-18ae-4f84-bce4-dbc21a9fc004",
@@ -190,7 +190,7 @@
       "platform": "Twitch",
       "streamerColor": "#9146FF",
       "altColorHex": null,
-      "isLive": false
+      "isLive": true
     },
     {
       "privateId": "671514db-757f-4510-a936-ea77430e392a",
@@ -220,7 +220,7 @@
       "platform": "Twitch",
       "streamerColor": "#a5dfa3",
       "altColorHex": null,
-      "isLive": false
+      "isLive": true
     },
     {
       "privateId": "e213338d-2442-4d58-bc6b-1d063cb57224",
@@ -270,7 +270,7 @@
       "platform": "Twitch",
       "streamerColor": "#d5108d",
       "altColorHex": null,
-      "isLive": false
+      "isLive": true
     }
   ]
 }
