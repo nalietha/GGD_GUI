@@ -43,7 +43,6 @@ __all__ = [
 ENV_PREFIX = "LIVEPULSE_"
 ENV_CONFIG_PATH = "LIVEPULSE_CONFIG"
 
-LedBackend = Literal["auto", "ws281x", "spi", "sim"]
 NodeOrder = Literal["linear", "serpentine", "custom"]
 
 
@@ -68,8 +67,14 @@ class LedSettings(_StrictSection):
     — produces byte-identical output for the same state.
     """
 
-    backend: LedBackend = "auto"
-    """``auto`` picks the best backend this machine can actually run."""
+    backend: str = "auto"
+    """Driver backend name, or ``auto`` to pick the best one this machine can run.
+
+    Deliberately not a ``Literal``: the driver registry is open to new backends,
+    and enumerating them here would mean a third-party backend could register
+    successfully and then be rejected by config validation. Unknown names are
+    caught at driver construction, which reports the registered alternatives.
+    """
 
     gpio_pin: int = 18
     """PWM data pin for the ``ws281x`` backend. GPIO10 (MOSI) is used by ``spi``."""
