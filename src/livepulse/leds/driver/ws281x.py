@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import Any
 
 from livepulse.core.errors import DriverUnavailableError
+from livepulse.hardware import supports_pwm_ws281x
 from livepulse.leds.color import RGB
 from livepulse.leds.driver.base import PixelBufferDriver
 
@@ -99,11 +100,15 @@ def _import_library() -> Any:
 def is_available() -> bool:
     """Whether this backend could plausibly run here.
 
-    Cheap check used by ``auto`` selection and ``livepulse doctor``; it does not
-    prove the process has permission, which only construction can establish.
+    Requires both the library *and* a board whose PWM peripherals it can reach.
+    Checking only the import would report a Pi 5 as usable, and the failure
+    would then surface as silent darkness rather than a diagnosable error.
+
+    Does not prove the process has permission for ``/dev/mem`` — only
+    construction can establish that.
     """
     try:
         _import_library()
     except DriverUnavailableError:
         return False
-    return True
+    return supports_pwm_ws281x()

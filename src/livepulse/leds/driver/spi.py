@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Any
 
 from livepulse.core.errors import DriverUnavailableError
+from livepulse.hardware import spi_devices
 from livepulse.leds.color import RGB
 from livepulse.leds.driver.base import PixelBufferDriver
 
@@ -93,9 +94,15 @@ def _import_libraries() -> tuple[Any, Any]:
 
 
 def is_available() -> bool:
-    """Whether this backend could plausibly run here."""
+    """Whether this backend could plausibly run here.
+
+    Requires both the libraries *and* a kernel actually exposing an SPI device.
+    The device node is the stronger signal: if SPI is off in
+    ``/boot/firmware/config.txt`` then the strip cannot be on GPIO10, whatever
+    Python packages happen to be installed.
+    """
     try:
         _import_libraries()
     except DriverUnavailableError:
         return False
-    return True
+    return bool(spi_devices())

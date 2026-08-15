@@ -12,11 +12,22 @@ second — so it needs to stay a plain tuple.
 from __future__ import annotations
 
 import colorsys
-from typing import NamedTuple
+from typing import NamedTuple, Protocol, runtime_checkable
 
 from livepulse.core.errors import ConfigError
 
-__all__ = ["BLACK", "RGB", "WHITE", "GammaTable", "parse_hex", "to_hex"]
+__all__ = [
+    "BLACK",
+    "RGB",
+    "WHITE",
+    "Gamma",
+    "GammaTable",
+    "IdentityGamma",
+    "from_hsv",
+    "output_value",
+    "parse_hex",
+    "to_hex",
+]
 
 _MAX = 255
 
@@ -144,3 +155,29 @@ class IdentityGamma:
 
     def apply(self, color: RGB) -> RGB:
         return color
+
+
+@runtime_checkable
+class Gamma(Protocol):
+    """Anything that can correct a colour for output.
+
+    Two methods would be one too many: the compositor and the diagnostic
+    commands only ever need :meth:`apply`, so that is all the protocol asks for.
+    """
+
+    def apply(self, color: RGB) -> RGB: ...
+
+
+def output_value(color: RGB, brightness: int, gamma: Gamma) -> RGB:
+    """The final transform before a colour reaches the driver.
+
+    Brightness first, then gamma. Scaling is a perceptual instruction ("half as
+    bright"), and gamma is what turns a perceptual value into the drive level
+    the LED needs — so correcting first and scaling afterwards would apply the
+    curve to the wrong number.
+
+    This lives here rather than in the compositor because the diagnostic
+    commands need the identical transform: what ``livepulse leds test`` puts on
+    the strip has to be exactly what the render loop would.
+    """
+    return gamma.apply(color.scaled(brightness / _MAX))

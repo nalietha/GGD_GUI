@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -21,7 +22,9 @@ import typer
 from livepulse import __version__
 from livepulse.config.settings import Settings, default_config_path, load_settings
 from livepulse.core.errors import LivePulseError
-from livepulse.leds.driver.registry import available_backends
+from livepulse.leds.color import BLACK, GammaTable, output_value, parse_hex
+from livepulse.leds.driver.base import LedDriver
+from livepulse.leds.driver.registry import available_backends, create_driver, deprecated_backends
 from livepulse.leds.layout import Layout
 from livepulse.logging import configure_logging
 from livepulse.storage.db import Database
@@ -183,12 +186,20 @@ app.add_typer(leds_app, name="leds")
 
 @leds_app.command("backends")
 def leds_backends() -> None:
-    """List LED backends and whether each can run on this machine."""
+    """List LED backends, whether each can run here, and which are retiring."""
+    retiring = deprecated_backends()
+
     for name, ok in available_backends().items():
         mark, colour = (
             ("available", typer.colors.GREEN) if ok else ("unavailable", typer.colors.YELLOW)
         )
-        typer.secho(f"  {name:<10} {mark}", fg=colour)
+        suffix = "  [deprecated]" if name in retiring else ""
+        typer.secho(f"  {name:<10} {mark}{suffix}", fg=colour)
+
+    for name, migration in retiring.items():
+        typer.echo("")
+        typer.secho(f"{name} is deprecated", fg=typer.colors.YELLOW, bold=True)
+        typer.secho(f"  {migration}", fg=typer.colors.YELLOW)
 
 
 @leds_app.command("layout")
@@ -210,6 +221,102 @@ def leds_layout(config: ConfigOption = None) -> None:
     typer.secho(f"{'logical':>8}  {'physical':>8}  pixels", bold=True)
     for logical, physical, pixels in layout.describe():
         typer.echo(f"{logical:>8}  {physical:>8}  {pixels.start}..{pixels.stop - 1}")
+
+
+def _open_display(settings: Settings) -> tuple[Layout, LedDriver, GammaTable]:
+    """Build the layout, driver, and gamma table the diagnostics need.
+
+    Uses the same construction path the render loop will, so what these
+    commands put on the strip is what the application would put there.
+    """
+    try:
+        layout = Layout(settings.layout)
+        driver = create_driver(layout.pixel_count, settings.leds)
+    except LivePulseError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
+    return layout, driver, GammaTable(settings.leds.gamma)
+
+
+@leds_app.command("test")
+def leds_test(
+    config: ConfigOption = None,
+    color: Annotated[str, typer.Option("--color", help="Hex colour to display.")] = "#ffffff",
+    brightness: Annotated[
+        int, typer.Option("--brightness", min=1, max=255, help="Master brightness.")
+    ] = 64,
+    seconds: Annotated[float, typer.Option("--seconds", help="How long to hold it.")] = 3.0,
+) -> None:
+    """Light every pixel, then clear.
+
+    The first thing to run after wiring or rewiring: it proves power, data, and
+    colour order without involving channels, effects, or the network.
+    """
+    settings = _load(config)
+    configure_logging(level=settings.log_level, json=settings.log_json)
+
+    try:
+        wanted = parse_hex(color)
+    except LivePulseError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
+
+    _, driver, gamma = _open_display(settings)
+    try:
+        driver.fill(output_value(wanted, brightness, gamma))
+        driver.show()
+        typer.echo(f"{driver.pixel_count} pixels at {color} — holding {seconds:g}s")
+        time.sleep(seconds)
+    finally:
+        # close() blanks the strip, so an interrupted test never leaves it lit.
+        driver.close()
+
+    typer.secho("cleared", fg=typer.colors.GREEN)
+
+
+@leds_app.command("identify")
+def leds_identify(
+    config: ConfigOption = None,
+    color: Annotated[str, typer.Option("--color", help="Hex colour to display.")] = "#ffffff",
+    brightness: Annotated[
+        int, typer.Option("--brightness", min=1, max=255, help="Master brightness.")
+    ] = 64,
+    dwell: Annotated[float, typer.Option("--dwell", help="Seconds to hold each node.")] = 1.0,
+) -> None:
+    """Light one node at a time, announcing which it is.
+
+    This is how you verify the layout against the physical stand — especially
+    after moving the data pin. Logical node 0 should light the leftmost slot.
+    If the sequence runs backwards or starts in the wrong row, adjust
+    ``layout.start_at_last_row`` or ``layout.first_row_reversed`` rather than
+    editing any code.
+    """
+    settings = _load(config)
+    configure_logging(level=settings.log_level, json=settings.log_json)
+
+    try:
+        wanted = parse_hex(color)
+    except LivePulseError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
+
+    layout, driver, gamma = _open_display(settings)
+    lit = output_value(wanted, brightness, gamma)
+
+    try:
+        for node_id in layout.nodes():
+            driver.fill(BLACK)
+            for pixel in layout.pixels(node_id):
+                driver.set_pixel(pixel, lit)
+            driver.show()
+
+            physical = layout.physical_position(node_id)
+            typer.echo(f"  node {node_id:>2}  (physical {physical:>2})  — should be lit now")
+            time.sleep(dwell)
+    finally:
+        driver.close()
+
+    typer.secho("done", fg=typer.colors.GREEN)
 
 
 # --------------------------------------------------------------------------- #
