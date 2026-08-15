@@ -1,0 +1,109 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "livepulse"
+version = "2.0.0.dev0"
+description = "Platform-agnostic live-stream status LED display for Raspberry Pi"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Nathan Lietha" }]
+keywords = ["raspberry-pi", "led", "ws2811", "twitch", "streaming"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Hardware",
+]
+
+dependencies = [
+    "pydantic>=2.6,<3",
+    "pydantic-settings>=2.2,<3",
+    "aiosqlite>=0.20",
+    "structlog>=24.1",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+# Hardware backends. Installed only on a Pi; the app runs without them.
+pwm = ["rpi_ws281x>=5.0"]
+spi = ["adafruit-circuitpython-neopixel-spi>=1.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+livepulse = "livepulse.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/nalietha/LivePulse"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/livepulse"]
+
+# --------------------------------------------------------------------------- #
+# Tooling
+# --------------------------------------------------------------------------- #
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+# V1 lives on until the Phase 3 cutover, but it is not held to V2's standards.
+# Removed wholesale when V2 replaces it.
+extend-exclude = [
+    "GGD_Display",
+    "GGD_Flask",
+    "GGD_LightController",
+    "GDD_Twitch_API",
+]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "B",        # bugbear
+    "UP",       # pyupgrade
+    "SIM",      # flake8-simplify  (DRY enforcement)
+    "RET",      # flake8-return
+    "ARG",      # unused arguments
+    "PTH",      # use pathlib
+    "RUF",
+]
+ignore = [
+    "B008",  # typer uses function calls in argument defaults by design
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG001", "ARG002"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+files = ["src/livepulse"]
+
+[[tool.mypy.overrides]]
+module = ["rpi_ws281x.*", "neopixel_spi.*", "board.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q --strict-markers"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["src/livepulse"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]

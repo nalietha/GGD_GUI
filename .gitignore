@@ -362,3 +362,26 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /GDD_Twitch_API/appsettings.json
+
+# ---------------------------------------------------------------------------
+# LivePulse V2 (Python)
+# ---------------------------------------------------------------------------
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local runtime state and credentials — never committed
+.env
+livepulse.toml
+secrets.toml
+*.db
+*.db-wal
+*.db-shm
