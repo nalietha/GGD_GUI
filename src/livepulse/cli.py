@@ -22,10 +22,14 @@ import typer
 from livepulse import __version__
 from livepulse.config.settings import Settings, default_config_path, load_settings
 from livepulse.core.errors import LivePulseError
+from livepulse.core.models import DisplayMode, LiveState, StateSource
 from livepulse.leds.color import BLACK, GammaTable, output_value, parse_hex
+from livepulse.leds.compositor import Compositor
 from livepulse.leds.driver.base import LedDriver
 from livepulse.leds.driver.registry import available_backends, create_driver, deprecated_backends
 from livepulse.leds.layout import Layout
+from livepulse.leds.renderer import Renderer
+from livepulse.leds.state import build_render_state
 from livepulse.logging import configure_logging
 from livepulse.storage.db import Database
 from livepulse.storage.import_v1 import ImportPlan, apply_plan, build_plan, read_v1_files
@@ -317,6 +321,103 @@ def leds_identify(
         driver.close()
 
     typer.secho("done", fg=typer.colors.GREEN)
+
+
+@leds_app.command("demo")
+def leds_demo(
+    config: ConfigOption = None,
+    seconds: Annotated[float, typer.Option("--seconds", help="How long to run.")] = 10.0,
+    live: Annotated[
+        list[str] | None,
+        typer.Option("--live", help="Pretend this channel handle is live. Repeatable."),
+    ] = None,
+    mode: Annotated[
+        DisplayMode | None,
+        typer.Option("--mode", help="Override the stored display mode.", show_default=False),
+    ] = None,
+    flash: Annotated[
+        bool, typer.Option("--flash/--no-flash", help="Fire a go-live flash at the start.")
+    ] = True,
+) -> None:
+    """Render the configured stand for a while, with no network.
+
+    Reads real channels, nodes, and settings from the database and drives the
+    full pipeline — state resolution, effects, compositor, driver — exactly as
+    the service will. Use ``--live`` to simulate someone broadcasting.
+
+    This is how to check that an imported V1 configuration looks right before
+    any provider exists to poll.
+    """
+    settings = _load(config)
+    configure_logging(level=settings.log_level, json=settings.log_json)
+    asyncio.run(_run_demo(settings, seconds, set(live or []), mode=mode, flash=flash))
+
+
+async def _run_demo(
+    settings: Settings,
+    seconds: float,
+    live_handles: set[str],
+    *,
+    mode: DisplayMode | None,
+    flash: bool,
+) -> None:
+    async with Database(settings.db_path) as db:
+        repos = Repositories(db)
+        store = RuntimeSettingsStore(repos.settings)
+        await store.load()
+        # Override in memory only — a diagnostic must not rewrite the user's mode.
+        display = store.current if mode is None else store.current.model_copy(update={"mode": mode})
+
+        channels = await repos.channels.list()
+        nodes = await repos.nodes.list()
+
+    if not nodes:
+        typer.secho(
+            "no nodes configured — run 'livepulse migrate-v1' first",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    by_id = {channel.id: channel for channel in channels}
+    wanted = {handle.lower() for handle in live_handles}
+    states = {
+        channel.id: LiveState(is_live=channel.handle.lower() in wanted, source=StateSource.MANUAL)
+        for channel in channels
+    }
+
+    layout = Layout(settings.layout)
+    driver = create_driver(layout.pixel_count, settings.leds)
+    renderer = Renderer(
+        driver, Compositor(layout, GammaTable(settings.leds.gamma)), fps=settings.leds.fps
+    )
+
+    state = build_render_state(nodes, by_id, states, display)
+    renderer.submit(state)
+
+    lit = [view.node_id for view in state.nodes if view.is_live]
+    suffix = " (overridden)" if mode is not None else ""
+    typer.echo(f"mode {display.mode.value}{suffix}, brightness {display.brightness}")
+    typer.echo(f"{len(channels)} channels, {len(nodes)} nodes, {len(lit)} live")
+    if state.ambient_active:
+        # Two different reasons land here; saying which avoids the reading
+        # that live channels are being ignored by mistake.
+        reason = (
+            "ambient mode — live status is deliberately ignored"
+            if display.mode is DisplayMode.AMBIENT
+            else "nobody live — showing the ambient effect"
+        )
+        typer.echo(reason)
+
+    with renderer:
+        if flash and lit:
+            renderer.compositor.add_transient(set(lit), "flash", now=0.0)
+        time.sleep(seconds)
+
+    typer.secho(
+        f"rendered {renderer.stats.frames} frames ({renderer.stats.late_frames} late)",
+        fg=typer.colors.GREEN,
+    )
 
 
 # --------------------------------------------------------------------------- #
