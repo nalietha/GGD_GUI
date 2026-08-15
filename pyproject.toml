@@ -84,6 +84,10 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ARG001", "ARG002"]
+# Implementing a protocol means accepting every argument it defines, whether or
+# not a given implementation needs it: OffEffect ignores both ctx and t, and
+# StaticEffect ignores t. Renaming them to _ctx/_t would break the protocol.
+"src/livepulse/leds/effects/builtin.py" = ["ARG002"]
 
 [tool.mypy]
 python_version = "3.11"
