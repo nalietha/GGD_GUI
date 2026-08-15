@@ -393,7 +393,7 @@ Phases 0–3 are the rewrite. Phases 4–6 are the new capability.
 
 ## 14. Decisions needed before Phase 0
 
-1. **LED wiring** — commit to SPI (GPIO18 → GPIO10, no root, Pi 5 works) or keep PWM (no rewiring, but Pi 4 is the ceiling forever)? Recommendation: **support both, default SPI for new builds.**
+1. ~~**LED wiring**~~ — **Decided: support both, phase PWM out.** Both backends ship. `auto` prefers `ws281x` while it is installed and viable, because the soldered pin is a physical fact with no software signal and guessing wrong means silent darkness — so an existing GPIO18 stand keeps working across upgrades untouched. New builds (`[spi]` only) and Pi 5s get SPI with no configuration. `ws281x` is marked deprecated in the registry, warns at startup, and retires in 3.0. Migration steps: `docs/hardware.md`.
 2. **Twitch push auth** — the EventSub WebSocket path needs a one-time user OAuth (device-code flow, stored refresh token). Acceptable, or should V2.0 ship poll-only and defer push to V2.1?
 3. **Which platforms are actually wanted** beyond Twitch, in priority order? The generic declarative provider covers the long tail, but the first-class ones are worth naming now.
 4. **Node count** — stay at 16, or make the second stand a first-class multi-strip config?

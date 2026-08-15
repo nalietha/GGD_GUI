@@ -9,9 +9,11 @@ from livepulse.leds.color import (
     BLACK,
     RGB,
     WHITE,
+    Gamma,
     GammaTable,
     IdentityGamma,
     from_hsv,
+    output_value,
     parse_hex,
     to_hex,
 )
@@ -110,3 +112,34 @@ class TestGamma:
     def test_identity_gamma_is_a_passthrough(self) -> None:
         color = RGB(128, 64, 32)
         assert IdentityGamma().apply(color) == color
+
+
+class TestOutputValue:
+    """The final transform before a colour reaches the driver.
+
+    Shared between the compositor and the diagnostic commands so that what
+    ``livepulse leds test`` puts on the strip is exactly what the render loop
+    would put there.
+    """
+
+    def test_full_brightness_is_gamma_only(self) -> None:
+        color = RGB(200, 100, 50)
+        assert output_value(color, 255, IdentityGamma()) == color
+
+    def test_zero_brightness_is_black(self) -> None:
+        assert output_value(WHITE, 0, IdentityGamma()) is BLACK
+
+    def test_brightness_is_applied_before_gamma(self) -> None:
+        """Scaling is perceptual; gamma converts perceptual to drive level.
+
+        Correcting first and scaling afterwards would apply the curve to the
+        wrong number and wash out every dimmed colour.
+        """
+        gamma = GammaTable(2.0)
+        expected = gamma.apply(WHITE.scaled(128 / 255))
+        assert output_value(WHITE, 128, gamma) == expected
+        assert output_value(WHITE, 128, gamma) != gamma.apply(WHITE).scaled(128 / 255)
+
+    def test_gamma_table_satisfies_the_protocol(self) -> None:
+        assert isinstance(GammaTable(), Gamma)
+        assert isinstance(IdentityGamma(), Gamma)
