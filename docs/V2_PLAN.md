@@ -310,7 +310,9 @@ channels(id TEXT PK, provider TEXT, platform_ref TEXT, handle TEXT,
          display_name TEXT, url TEXT, color TEXT, alt_color TEXT,
          created_at, UNIQUE(provider, platform_ref))
 nodes(id INTEGER PK, effect TEXT, color TEXT, params JSON)
-bindings(node_id → nodes.id, channel_id → channels.id)   -- many nodes per channel
+-- Built instead as a nullable FK on nodes.channel_id (ON DELETE SET NULL).
+-- A node binds to at most one channel, so a join table would model a
+-- many-to-many that cannot occur. Many nodes per channel still works.
 live_state(channel_id PK, is_live, title, category, viewers, started_at, observed_at, source)
 settings(key TEXT PK, value JSON)
 provider_accounts(provider TEXT PK, token_ref TEXT, expires_at)

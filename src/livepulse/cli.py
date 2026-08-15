@@ -10,6 +10,7 @@ Subcommands are added as the phases land (``run``, ``leds``, ``provider``,
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 from pathlib import Path
@@ -23,6 +24,10 @@ from livepulse.core.errors import LivePulseError
 from livepulse.leds.driver.registry import available_backends
 from livepulse.leds.layout import Layout
 from livepulse.logging import configure_logging
+from livepulse.storage.db import Database
+from livepulse.storage.import_v1 import ImportPlan, apply_plan, build_plan, read_v1_files
+from livepulse.storage.repositories import Repositories
+from livepulse.storage.runtime import RuntimeSettingsStore
 
 app = typer.Typer(
     name="livepulse",
@@ -205,3 +210,79 @@ def leds_layout(config: ConfigOption = None) -> None:
     typer.secho(f"{'logical':>8}  {'physical':>8}  pixels", bold=True)
     for logical, physical, pixels in layout.describe():
         typer.echo(f"{logical:>8}  {physical:>8}  {pixels.start}..{pixels.stop - 1}")
+
+
+# --------------------------------------------------------------------------- #
+# migrate-v1
+# --------------------------------------------------------------------------- #
+
+
+@app.command("migrate-v1")
+def migrate_v1(
+    save: Annotated[Path, typer.Argument(help="Path to V1's save.json.")],
+    appsettings: Annotated[
+        Path | None,
+        typer.Option("--appsettings", help="Path to V1's appsettings.json.", show_default=False),
+    ] = None,
+    config: ConfigOption = None,
+    apply: Annotated[
+        bool, typer.Option("--apply", help="Write to the database instead of previewing.")
+    ] = False,
+) -> None:
+    """Import a V1 configuration.
+
+    Previews by default. Node bindings survive because V1's ``privateId`` becomes
+    the channel id unchanged, so the stand lights exactly as it did before.
+    """
+    settings = _load(config)
+    configure_logging(level=settings.log_level, json=settings.log_json)
+
+    try:
+        save_data, app_data = read_v1_files(save, appsettings)
+        plan = build_plan(save_data, app_data)
+    except LivePulseError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
+
+    typer.secho(f"channels ({len(plan.channels)})", bold=True)
+    for channel in plan.channels:
+        typer.echo(f"  {channel.label:<20} {channel.provider:<10} {channel.color}")
+
+    bound = sum(1 for node in plan.nodes if node.channel_id)
+    typer.echo("")
+    typer.secho(f"nodes ({len(plan.nodes)})", bold=True)
+    typer.echo(f"  {bound} bound, {len(plan.nodes) - bound} unbound")
+
+    if plan.settings:
+        typer.echo("")
+        typer.secho("settings", bold=True)
+        for key, value in sorted(plan.settings.items()):
+            typer.echo(f"  {key} = {value}")
+
+    if plan.warnings:
+        typer.echo("")
+        typer.secho(f"warnings ({len(plan.warnings)})", bold=True, fg=typer.colors.YELLOW)
+        for warning in plan.warnings:
+            typer.secho(f"  {warning}", fg=typer.colors.YELLOW)
+
+    typer.echo("")
+    if not apply:
+        typer.secho(f"dry run — {plan.summary()}", bold=True)
+        typer.echo("Re-run with --apply to write to the database.")
+        return
+
+    asyncio.run(_apply_import(plan, settings))
+    typer.secho(f"imported — {plan.summary()}", fg=typer.colors.GREEN, bold=True)
+
+
+async def _apply_import(plan: ImportPlan, settings: Settings) -> None:
+    """Open the database, migrate the schema, and write the plan."""
+    try:
+        async with Database(settings.db_path) as db:
+            repos = Repositories(db)
+            store = RuntimeSettingsStore(repos.settings)
+            await store.load()
+            await apply_plan(plan, repos, store)
+    except LivePulseError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
