@@ -20,6 +20,8 @@ import typer
 from livepulse import __version__
 from livepulse.config.settings import Settings, default_config_path, load_settings
 from livepulse.core.errors import LivePulseError
+from livepulse.leds.driver.registry import available_backends
+from livepulse.leds.layout import Layout
 from livepulse.logging import configure_logging
 
 app = typer.Typer(
@@ -135,15 +137,71 @@ def doctor(config: ConfigOption = None) -> None:
     else:
         check("data dir exists", False, f"{data_dir} — run: mkdir -p {data_dir}")
 
+    try:
+        layout = Layout(settings.layout)
+        check(
+            "layout builds",
+            True,
+            f"{layout.node_count} nodes x {layout.leds_per_node} = {layout.pixel_count} pixels",
+        )
+    except LivePulseError as exc:
+        check("layout builds", False, str(exc))
+
+    backends = available_backends()
+    usable = [name for name, ok in backends.items() if ok]
     check(
-        "layout is consistent",
-        settings.layout.pixel_count > 0,
-        f"{settings.layout.nodes} nodes x {settings.layout.leds_per_node} = "
-        f"{settings.layout.pixel_count} pixels",
+        "an LED backend is usable",
+        bool(usable),
+        ", ".join(f"{name}{'' if ok else ' (unavailable)'}" for name, ok in backends.items()),
     )
+    if settings.leds.backend != "auto" and not backends.get(settings.leds.backend, False):
+        check(
+            f"configured backend {settings.leds.backend!r} is available",
+            False,
+            "auto-selection would fall back; this configuration will fail at startup",
+        )
 
     typer.echo("")
     if failures:
         typer.secho(f"{failures} check(s) failed", fg=typer.colors.RED, bold=True)
         raise typer.Exit(code=1)
     typer.secho("all checks passed", fg=typer.colors.GREEN, bold=True)
+
+
+# --------------------------------------------------------------------------- #
+# leds
+# --------------------------------------------------------------------------- #
+
+leds_app = typer.Typer(help="Inspect and exercise the LED hardware.", no_args_is_help=True)
+app.add_typer(leds_app, name="leds")
+
+
+@leds_app.command("backends")
+def leds_backends() -> None:
+    """List LED backends and whether each can run on this machine."""
+    for name, ok in available_backends().items():
+        mark, colour = (
+            ("available", typer.colors.GREEN) if ok else ("unavailable", typer.colors.YELLOW)
+        )
+        typer.secho(f"  {name:<10} {mark}", fg=colour)
+
+
+@leds_app.command("layout")
+def leds_layout(config: ConfigOption = None) -> None:
+    """Show how logical nodes map onto the strip.
+
+    Use this to check the config against the actual wiring: logical node 0 is
+    the leftmost slot on the stand, and its physical position is how far along
+    the data line it sits. V1 buried this in a copy-pasted expression, so
+    verifying it meant reading three files in two languages.
+    """
+    settings = _load(config)
+    try:
+        layout = Layout(settings.layout)
+    except LivePulseError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
+
+    typer.secho(f"{'logical':>8}  {'physical':>8}  pixels", bold=True)
+    for logical, physical, pixels in layout.describe():
+        typer.echo(f"{logical:>8}  {physical:>8}  {pixels.start}..{pixels.stop - 1}")
