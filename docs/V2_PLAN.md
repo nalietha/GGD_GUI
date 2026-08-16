@@ -111,6 +111,7 @@ These matter mainly because they explain *why* it limps, and because V2 must not
 6. Real persistence (SQLite) with atomic writes and migrations, plus a clean import from V1 `save.json`.
 7. Live-updating web UI (SSE) with a documented REST API.
 8. Testable off-Pi: simulated LED backend and fake providers, so the whole thing runs on a laptop.
+9. **Quiet hours.** A schedule and a one-touch off, so the stand can live in a room people sleep in. See §16 — this is the reason V1 got switched off at the wall, and it is a requirement, not a nicety.
 
 **Non-goals for V2.0**
 - Cloud/multi-tenant anything. Single device, LAN-local.
@@ -382,7 +383,7 @@ Each phase ends with something runnable.
 | **0 — Skeleton** | Repo layout, `pyproject.toml`, CI, config loader, event bus, models, SQLite + migrations, `sim` LED backend, `livepulse doctor` | `python -m livepulse` runs on a laptop with a simulated strip |
 | **1 — Render core** | Driver protocol + `ws281x` + `spi`, layout descriptor, gamma, frame thread, compositor, six effects, golden-frame tests | Real lights, real animations, no network |
 | **2 — Providers (poll)** | Provider protocol, registry, scheduler with batching/jitter/rate limits, `twitch` poller, `manual`, `owncast` | Feature parity with V1's working path, correctly |
-| **3 — Web** | FastAPI, dashboard, channels, settings, SSE, REST API, `migrate-v1` | V1 replaceable end-to-end; **cut over here** |
+| **3 — Web** | FastAPI, dashboard, channels, settings, SSE, REST API, `migrate-v1`, **off button + quiet-hours schedule** (§16) | V1 replaceable end-to-end; **cut over here** |
 | **4 — Push** | Twitch EventSub WebSocket + device-code auth, connection supervisor, inbound webhook provider | Sub-second go-live reaction |
 | **5 — Breadth** | `generic_http` declarative provider, YouTube, Kick, HLS probe, provider health UI | The actual decoupling-from-Twitch goal, delivered |
 | **6 — Polish** | WiFi provisioning, hotspot fallback, mDNS, systemd hardening, install script, docs, `leds identify` | Shippable to someone who isn't you |
@@ -394,11 +395,12 @@ Phases 0–3 are the rewrite. Phases 4–6 are the new capability.
 ## 14. Decisions needed before Phase 0
 
 1. ~~**LED wiring**~~ — **Decided: support both, phase PWM out.** Both backends ship. `auto` prefers `ws281x` while it is installed and viable, because the soldered pin is a physical fact with no software signal and guessing wrong means silent darkness — so an existing GPIO18 stand keeps working across upgrades untouched. New builds (`[spi]` only) and Pi 5s get SPI with no configuration. `ws281x` is marked deprecated in the registry, warns at startup, and retires in 3.0. Migration steps: `docs/hardware.md`.
-2. **Twitch push auth** — the EventSub WebSocket path needs a one-time user OAuth (device-code flow, stored refresh token). Acceptable, or should V2.0 ship poll-only and defer push to V2.1?
-3. **Which platforms are actually wanted** beyond Twitch, in priority order? The generic declarative provider covers the long tail, but the first-class ones are worth naming now.
-4. **Node count** — stay at 16, or make the second stand a first-class multi-strip config?
-5. **UI access** — open on the LAN, or gate behind a PIN?
-6. **Adult-platform checks** — V1's `plugins/adult_sites.json` never worked (the endpoints listed aren't public status APIs). V2 can serve this purely through the user-supplied generic HTTP provider, keeping no site-specific code in the repo. Confirm that's the direction.
+2. ~~**Twitch push auth**~~ — **Decided: EventSub push is in scope for V2.0.** The one-time device-code OAuth is accepted. `PushSupervisor` is built and tested; the poller remains the fallback and the reconciliation backstop. Push is the goal specifically to stop the blind minute-by-minute poll.
+3. ~~**Quiet hours**~~ — **Decided.** `OFF` means dark-but-running, so nothing is ever missed; a go-live does *not* wake the stand during quiet hours; resuming settles silently rather than firing a flash storm. Full model in §16.
+4. **Which platforms are actually wanted** beyond Twitch, in priority order? The generic declarative provider covers the long tail, but the first-class ones are worth naming now.
+5. **Node count** — stay at 16, or make the second stand a first-class multi-strip config?
+6. **UI access** — open on the LAN, or gate behind a PIN?
+7. **Adult-platform checks** — V1's `plugins/adult_sites.json` never worked (the endpoints listed aren't public status APIs). V2 can serve this purely through the user-supplied generic HTTP provider, keeping no site-specific code in the repo. Confirm that's the direction.
 
 ## 15. Known risks
 
@@ -407,3 +409,124 @@ Phases 0–3 are the rewrite. Phases 4–6 are the new capability.
 - **Push behind NAT** — WebSub-style callbacks need a reachable URL. Twitch EventSub-over-WebSocket does not, which is why it's first.
 - **Pi Zero 2 W** — 512 MB RAM. Keep the frame loop allocation-free and avoid pulling in heavy deps (no pandas, no numpy unless it earns its place; a 112-pixel buffer does not need it).
 - **Scope creep** — the tempting features (hall-effect sensing, multi-stand, audio reactivity) are all V2.x. Phase 3 is the cutover; resist adding to it.
+
+---
+
+## 16. Operating model — how this device is actually used
+
+Recorded because it drives real requirements that are invisible from the code.
+
+### The problem V1 had
+
+**V1's Raspberry Pi Zero 2 was switched off at the wall, and stayed off.** Not
+because of a bug — because there was no way to turn the lights off. Sixteen
+lit nodes in a room someone sleeps in is not something you leave running, and
+V1 offered no off switch, no dimming schedule, and no way to reach the UI
+without being on the Pi itself.
+
+That makes quiet hours a **primary requirement**. A display you have to unplug
+is a display that stops getting used, and every other feature is worth nothing
+after that.
+
+### The three display states
+
+`DisplayMode` already models these; the schedule just drives it.
+
+| State | Lights | Ingestion | Web UI | Use |
+|---|---|---|---|---|
+| `STREAMER` | Live channels lit, ambient when none | Running | Up | Normal daytime |
+| `AMBIENT` | Effects only | Idle *(intended — see below)* | Up | No internet, or just decorative |
+| `OFF` | Faded to black | **Running** | Up | Quiet hours, or the off button |
+
+**`OFF` keeps everything except the light.** That is the important design
+decision, and it is what makes the schedule free: the WebSocket stays
+connected, state stays current all night, and at 06:00 the master fades up
+already showing who is live *now*. There is no catch-up, no gap, and nothing
+missed. Idle draw is a couple of watts.
+
+### Quiet hours
+
+```toml
+[schedule]
+enabled = true
+timezone = "America/Chicago"   # never rely on system local time; DST is real
+off = "22:00"
+on  = "06:00"
+```
+
+Decided behaviour:
+
+- **Off means off.** A channel going live during quiet hours does *not* wake
+  the stand. State is still tracked in the background, so the lights are
+  correct the instant they return. Predictability beats cleverness in a
+  bedroom.
+- **Manual override wins until the next boundary.** Turning the lights on at
+  23:00 keeps them on until 06:00 arrives and re-asserts. The user is never
+  fighting the schedule.
+- **The schedule sets mode, it does not own it.** It writes the same
+  `RuntimeSettings.mode` the UI writes, through the same store, so there is one
+  path and one source of truth.
+
+Crossing midnight (`off` later than `on`) is the normal case and must be
+handled, not treated as invalid.
+
+### What happens to EventSub when the display is off
+
+Nothing — and that is the point.
+
+| Situation | Subscription | On resume |
+|---|---|---|
+| Scheduled `OFF` | **Stays connected.** Ingestion is unaffected. | Nothing to do; state is already current |
+| Network drops | Dies. Twitch never replays a missed notification. | Reconnect → `subscribed()` → reconcile poll |
+| Pi powered down | Dies, and Twitch eventually drops the subscriptions | Boot → subscribe → reconcile poll |
+
+The last two are the *same code path*, already built and tested in
+`PushSupervisor`. A cold boot is just a reconnect with a longer gap. Powering
+the Pi off is therefore safe: it costs one reconcile at boot, which is wanted
+anyway.
+
+Note the Pi cannot wake itself from a full shutdown. Actually powering down
+overnight needs external hardware — an RTC alarm board or a smart plug — which
+is why `OFF` is defined as dark-but-running instead.
+
+### Resuming without a flash storm
+
+After eight hours off, the database still holds what was true at 22:00. Five
+people live at 06:00 would each read as a fresh transition and fire a go-live
+flash at once.
+
+**Stored state older than a staleness threshold is treated as unknown**, which
+makes resumption a cold start. This reuses the rule already in
+`ChannelStateChanged.went_live`: no previous state means no flash. The stand
+settles silently to the truth and only flashes on transitions that happen while
+someone is actually watching.
+
+### Implementation consequences
+
+Three things this forces, worth naming before they surprise us:
+
+1. **A schedule service** — one asyncio task, timezone-aware, writing mode
+   through `RuntimeSettingsStore`. Must survive DST transitions and a clock
+   that jumps (NTP settling after boot on a Pi with no RTC).
+2. **`live_state.observed_at` gains meaning.** It already exists; the resume
+   logic reads it to decide whether stored state is trustworthy. No schema
+   change needed.
+3. **Settings changed from outside the process need a notification path.** A
+   CLI writing the database directly would *not* reach the running daemon,
+   whose `RuntimeSettingsStore` is an in-memory cache. So `livepulse display
+   off` must call the local HTTP API rather than the database — the one place
+   this could quietly reintroduce V1's central bug, where two processes
+   disagreed about settings because they never told each other anything.
+4. **`AMBIENT` does not yet idle ingestion.** `DisplayMode.AMBIENT` is
+   documented as "effects only, no platform polling", but `IngestScheduler`
+   never consults the mode and currently polls regardless. Harmless today
+   — it wastes a little API budget in a mode nobody uses yet — but it is a
+   divergence between a docstring and the code, which is precisely the class of
+   drift that produced §3. Wire it in Phase 3, when the schedule service gives
+   the scheduler a reason to care about mode at all. **`OFF` must keep polling**
+   — that is deliberate and is what makes quiet hours free.
+
+### Hardware note
+
+The Zero 2 W is the target. `rpi_ws281x` works there, but see `docs/hardware.md`
+— SPI is still the better backend, and the phase-out applies equally.
