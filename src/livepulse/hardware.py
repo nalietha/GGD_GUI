@@ -15,10 +15,11 @@ is soldered to. That is a physical fact with no software signal, which is why
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 __all__ = [
     "DEVICE_TREE_MODEL",
+    "conflicting_led_processes",
     "pi_generation",
     "pi_model",
     "spi_devices",
@@ -74,6 +75,78 @@ def supports_pwm_ws281x(source: Path = DEVICE_TREE_MODEL) -> bool:
     """
     generation = pi_generation(source)
     return generation is None or generation < FIRST_UNSUPPORTED_PWM_GENERATION
+
+
+#: V1 executables, matched against argv[0]'s basename.
+V1_BINARIES = frozenset({"GGD_Display"})
+
+#: V1 Python entry points, matched against argv[1]'s basename when argv[0] is a
+#: Python interpreter.
+V1_SCRIPTS = frozenset({"led_listener.py"})
+
+PROC_DIR = Path("/proc")
+
+
+def conflicting_led_processes(proc_dir: Path = PROC_DIR) -> list[tuple[int, str]]:
+    """Find running V1 processes that would fight us for the LED hardware.
+
+    Only one process can drive the strip: ``rpi_ws281x`` claims a DMA channel
+    and the PWM peripheral, and the SPI device is likewise exclusive. Two
+    writers produce flicker, garbled colour, or a driver that simply fails to
+    start — none of which look like "you forgot to stop the old service".
+
+    Scans ``/proc`` rather than asking systemd, because unit names differ
+    between installs and a process someone started by hand would be missed.
+
+    Matching is **positional, not a substring search**. It inspects only
+    argv[0] (the executable) and, for a Python interpreter, argv[1] (the
+    script). A plain substring search over the whole command line reports every
+    shell, editor, or grep that merely *mentions* the file — including the very
+    command someone runs while diagnosing this, which is how the false positive
+    was found.
+
+    Returns:
+        ``(pid, command)`` for each match. Empty when nothing conflicts.
+    """
+    found: list[tuple[int, str]] = []
+
+    try:
+        entries = list(proc_dir.iterdir())
+    except OSError:
+        return found
+
+    for entry in entries:
+        if not entry.name.isdigit():
+            continue
+        try:
+            raw = (entry / "cmdline").read_bytes()
+        except OSError:
+            # The process exited between listing and reading, or we lack
+            # permission. Neither is worth reporting.
+            continue
+
+        argv = [part for part in raw.decode("utf-8", errors="replace").split("\x00") if part]
+        if _is_v1_process(argv):
+            found.append((int(entry.name), " ".join(argv)))
+
+    return found
+
+
+def _is_v1_process(argv: list[str]) -> bool:
+    """Whether this argv is a V1 process, judged by position."""
+    if not argv:
+        return False
+
+    executable = PurePosixPath(argv[0]).name
+    if executable in V1_BINARIES:
+        return True
+
+    # `python3 /path/to/led_listener.py`. Requiring the interpreter in argv[0]
+    # is what stops `vim led_listener.py` from counting.
+    if executable.startswith("python") and len(argv) > 1:
+        return PurePosixPath(argv[1]).name in V1_SCRIPTS
+
+    return False
 
 
 def spi_devices(dev_dir: Path = DEV_DIR) -> list[Path]:
