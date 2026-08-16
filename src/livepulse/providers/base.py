@@ -33,12 +33,43 @@ __all__ = [
     "Provider",
     "ProviderConfig",
     "PushProvider",
+    "PushSession",
     "batched",
     "handle_from_url",
 ]
 
 #: Called by a push provider when a channel's state changes.
 EmitFn = Callable[[ChannelRef, LiveState], Awaitable[None]]
+
+
+@runtime_checkable
+class PushSession(Protocol):
+    """What a push provider reports back to its supervisor.
+
+    Richer than a bare emit callback because *when the subscription becomes
+    live* is itself important information. Twitch EventSub over WebSocket does
+    not retry a missed notification and does not replay history, and an
+    unplanned disconnect destroys the subscriptions bound to that session. So
+    there is always a window — between losing the socket and re-subscribing —
+    where a channel could have gone live and nobody would ever be told.
+
+    :meth:`subscribed` is the provider saying "these refs are covered from
+    now on", which is exactly the moment the supervisor must reconcile by
+    polling, to catch anything that changed while the socket was down.
+    """
+
+    async def emit(self, ref: ChannelRef, state: LiveState) -> None:
+        """Report a state change observed over the subscription."""
+        ...
+
+    def subscribed(self, refs: Sequence[ChannelRef]) -> None:
+        """Declare that these refs now have a live subscription.
+
+        Call on every (re)connect, after subscriptions are confirmed — not when
+        the socket opens. Between those two points nothing is covered.
+        """
+        ...
+
 
 #: Chunking is not ChannelRef-specific; the scheduler batches its own
 #: bookkeeping objects with the same helper.
@@ -161,16 +192,22 @@ class PushProvider(Protocol):
     """A provider that can also hold a live subscription.
 
     Implemented only where the platform genuinely supports it — Twitch EventSub
-    over WebSocket, or an inbound webhook. The scheduler drops a pushed channel
-    to a slow reconciliation poll rather than stopping entirely, because a
-    dropped socket must not silently freeze the display.
+    over WebSocket, or an inbound webhook. A pushed channel drops to slow
+    reconciliation polling rather than stopping entirely, because push is fast
+    but not reliable: a dropped socket must not silently freeze the display.
     """
 
-    async def watch(self, refs: Sequence[ChannelRef], emit: EmitFn) -> None:
-        """Hold a subscription, calling ``emit`` on every change.
+    async def watch(self, refs: Sequence[ChannelRef], session: PushSession) -> None:
+        """Hold a subscription, reporting through ``session``.
 
-        Runs until cancelled. Raising is allowed — the supervisor restarts it
-        with backoff and falls back to polling meanwhile.
+        Runs until cancelled. Call ``session.subscribed(refs)`` once the
+        subscription is confirmed — on first connect and on every reconnect —
+        then ``session.emit(...)`` per change.
+
+        Raising is allowed and expected: a network drop should propagate. The
+        supervisor restarts with backoff and the affected channels revert to
+        ordinary polling meanwhile, so a dead socket degrades to slower
+        updates rather than to no updates.
         """
         ...
 
