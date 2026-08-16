@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from livepulse.core.models import AuthKind, ChannelRef, LiveState, StateSource
 
@@ -39,6 +39,10 @@ __all__ = [
 
 #: Called by a push provider when a channel's state changes.
 EmitFn = Callable[[ChannelRef, LiveState], Awaitable[None]]
+
+#: Chunking is not ChannelRef-specific; the scheduler batches its own
+#: bookkeeping objects with the same helper.
+T = TypeVar("T")
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,8 +212,8 @@ class BaseProvider:
         return f"{type(self).__name__}(id={self.id!r})"
 
 
-def batched(refs: Sequence[ChannelRef], size: int) -> Iterator[Sequence[ChannelRef]]:
-    """Split refs into request-sized chunks.
+def batched(items: Sequence[T], size: int) -> Iterator[Sequence[T]]:
+    """Split a sequence into request-sized chunks.
 
     V1's C# Twitch client did not chunk at all, so more than 100 streamers
     would have produced a request the API rejects. Its Python client chunked,
@@ -217,8 +221,8 @@ def batched(refs: Sequence[ChannelRef], size: int) -> Iterator[Sequence[ChannelR
     """
     if size < 1:
         raise ValueError(f"batch size must be at least 1, got {size}")
-    for start in range(0, len(refs), size):
-        yield refs[start : start + size]
+    for start in range(0, len(items), size):
+        yield items[start : start + size]
 
 
 def handle_from_url(text: str) -> str:
