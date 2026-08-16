@@ -102,7 +102,11 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "-q --strict-markers"
+# importlib import mode lets two test files share a basename in different
+# directories (tests/leds/effects/test_registry.py and
+# tests/providers/test_registry.py) without needing __init__.py in every
+# test package. The default prepend mode collides on the module name.
+addopts = "-q --strict-markers --import-mode=importlib"
 filterwarnings = ["error"]
 
 [tool.coverage.run]
