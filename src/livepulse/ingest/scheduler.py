@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from uuid import UUID
 
@@ -160,6 +161,70 @@ class IngestScheduler:
                 tracked.pushed = pushed
                 tracked.next_due = 0.0
                 return
+
+    def reconcile_now(self, channel_ids: Iterable[UUID] | None = None) -> int:
+        """Make channels due immediately, so the next pass polls them.
+
+        This is what closes the gap left by a push transport. Twitch EventSub
+        over WebSocket never redelivers a missed notification, and an unplanned
+        disconnect destroys the subscriptions bound to that session — so
+        anything that changed while the socket was down is simply not reported.
+        Forcing a poll the moment the subscription is re-established recovers
+        that state in seconds rather than waiting for the reconciliation tick.
+
+        Args:
+            channel_ids: Which channels, or ``None`` for every tracked channel.
+
+        Returns:
+            How many channels were made due.
+        """
+        wanted = set(channel_ids) if channel_ids is not None else None
+        affected = 0
+
+        for runtime in self._providers.values():
+            for tracked in runtime.channels.values():
+                if wanted is None or tracked.channel_id in wanted:
+                    tracked.next_due = 0.0
+                    affected += 1
+
+        return affected
+
+    def apply_push(self, ref: ChannelRef, state: LiveState) -> bool:
+        """Record a state change that arrived over a subscription.
+
+        Goes through the same transition logic as a poll, so a pushed update
+        and a polled one are indistinguishable downstream — there is one place
+        that decides what "changed" means.
+
+        Returns:
+            Whether the channel was known and the state applied.
+        """
+        runtime = self._providers.get(ref.provider)
+        if runtime is None:
+            return False
+
+        for tracked in runtime.channels.values():
+            if tracked.ref.platform_ref == ref.platform_ref:
+                self._apply(tracked, state, runtime, self._clock.monotonic())
+                return True
+        return False
+
+    def set_pushed_many(self, channel_ids: Iterable[UUID], pushed: bool) -> None:
+        """Mark several channels at once, for a subscription covering a batch."""
+        wanted = set(channel_ids)
+        for runtime in self._providers.values():
+            for tracked in runtime.channels.values():
+                if tracked.channel_id in wanted:
+                    tracked.pushed = pushed
+                    if not pushed:
+                        # Reverting to ordinary polling: make it due now rather
+                        # than leaving it parked on the reconciliation cadence.
+                        tracked.next_due = 0.0
+
+    @property
+    def bus(self) -> EventBus:
+        """Exposed so the push supervisor can announce subscription health."""
+        return self._bus
 
     @property
     def tracked_count(self) -> int:
