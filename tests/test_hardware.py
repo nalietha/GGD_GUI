@@ -9,7 +9,13 @@ from pathlib import Path
 
 import pytest
 
-from livepulse.hardware import pi_generation, pi_model, spi_devices, supports_pwm_ws281x
+from livepulse.hardware import (
+    conflicting_led_processes,
+    pi_generation,
+    pi_model,
+    spi_devices,
+    supports_pwm_ws281x,
+)
 
 
 def model_file(tmp_path: Path, text: str) -> Path:
@@ -95,3 +101,86 @@ class TestSpiDevices:
 
     def test_missing_directory_does_not_raise(self, tmp_path: Path) -> None:
         assert spi_devices(tmp_path / "absent") == []
+
+
+class TestConflictingLedProcesses:
+    """Detecting a V1 process that would fight us for the strip.
+
+    Only one process can drive the LEDs. Two writers give flicker, garbled
+    colour, or a driver that will not start — none of which look like "the old
+    service is still running", so it is worth naming explicitly.
+    """
+
+    def fake_proc(self, tmp_path: Path, pids: dict[int, str]) -> Path:
+        for pid, cmdline in pids.items():
+            entry = tmp_path / str(pid)
+            entry.mkdir()
+            # /proc uses NUL separators between argv entries.
+            (entry / "cmdline").write_bytes(cmdline.replace(" ", "\x00").encode())
+        return tmp_path
+
+    def test_finds_the_v1_led_listener(self, tmp_path: Path) -> None:
+        proc = self.fake_proc(
+            tmp_path, {42: "/usr/bin/python3 /home/piDev/GamerDisplayWithNet/led_listener.py"}
+        )
+        found = conflicting_led_processes(proc)
+
+        assert len(found) == 1
+        assert found[0][0] == 42
+        assert "led_listener.py" in found[0][1]
+
+    def test_finds_the_v1_web_app(self, tmp_path: Path) -> None:
+        proc = self.fake_proc(tmp_path, {7: "/var/www/ggd_display/GGD_Display"})
+        assert [pid for pid, _ in conflicting_led_processes(proc)] == [7]
+
+    def test_ignores_unrelated_processes(self, tmp_path: Path) -> None:
+        proc = self.fake_proc(tmp_path, {1: "/sbin/init", 99: "/usr/bin/sshd -D"})
+        assert conflicting_led_processes(proc) == []
+
+    def test_ignores_non_numeric_entries(self, tmp_path: Path) -> None:
+        """/proc holds plenty that is not a process — self, meminfo, and so on."""
+        (tmp_path / "meminfo").write_text("led_listener.py")
+        (tmp_path / "self").mkdir()
+        assert conflicting_led_processes(tmp_path) == []
+
+    def test_survives_a_process_exiting_mid_scan(self, tmp_path: Path) -> None:
+        """A pid directory with no readable cmdline is normal, not an error."""
+        (tmp_path / "123").mkdir()
+        assert conflicting_led_processes(tmp_path) == []
+
+    def test_missing_proc_is_not_an_error(self, tmp_path: Path) -> None:
+        """Keeps `doctor` working on a machine without a Linux /proc."""
+        assert conflicting_led_processes(tmp_path / "absent") == []
+
+    def test_ignores_a_shell_that_merely_mentions_it(self, tmp_path: Path) -> None:
+        """The false positive that a substring search produced.
+
+        Diagnosing this very problem means typing the filename into a shell,
+        which a naive scan then reports as the conflict. Matching is positional
+        for exactly this reason.
+        """
+        proc = self.fake_proc(tmp_path, {50: "/bin/bash -c sudo|systemctl|stop|led_listener.py"})
+        assert conflicting_led_processes(proc) == []
+
+    def test_ignores_an_editor_holding_the_file_open(self, tmp_path: Path) -> None:
+        proc = self.fake_proc(tmp_path, {51: "/usr/bin/vim led_listener.py"})
+        assert conflicting_led_processes(proc) == []
+
+    def test_ignores_a_grep_for_it(self, tmp_path: Path) -> None:
+        proc = self.fake_proc(tmp_path, {52: "/usr/bin/grep -r led_listener.py /etc"})
+        assert conflicting_led_processes(proc) == []
+
+    def test_matches_any_python_interpreter_name(self, tmp_path: Path) -> None:
+        proc = self.fake_proc(tmp_path, {53: "/usr/bin/python3.11 /opt/ggd/led_listener.py"})
+        assert [pid for pid, _ in conflicting_led_processes(proc)] == [53]
+
+    def test_reports_every_conflict(self, tmp_path: Path) -> None:
+        proc = self.fake_proc(
+            tmp_path,
+            {
+                10: "/usr/bin/python3 led_listener.py",
+                11: "/var/www/ggd_display/GGD_Display",
+                12: "/usr/bin/sshd",
+            },
+        )
+        assert sorted(pid for pid, _ in conflicting_led_processes(proc)) == [10, 11]

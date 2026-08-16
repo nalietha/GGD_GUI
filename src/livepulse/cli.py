@@ -23,6 +23,7 @@ from livepulse import __version__
 from livepulse.config.settings import Settings, default_config_path, load_settings
 from livepulse.core.errors import LivePulseError
 from livepulse.core.models import DisplayMode, LiveState, StateSource
+from livepulse.hardware import conflicting_led_processes
 from livepulse.leds.color import BLACK, GammaTable, output_value, parse_hex
 from livepulse.leds.compositor import Compositor
 from livepulse.leds.driver.base import LedDriver
@@ -172,6 +173,20 @@ def doctor(config: ConfigOption = None) -> None:
             False,
             "auto-selection would fall back; this configuration will fail at startup",
         )
+
+    # Two processes cannot drive one strip. Without this the symptom is flicker
+    # or a driver that will not start, neither of which points at the cause.
+    conflicts = conflicting_led_processes()
+    if conflicts:
+        check(
+            "no other process is driving the LEDs",
+            False,
+            "V1 is still running: "
+            + "; ".join(f"pid {pid} ({command[:60]})" for pid, command in conflicts)
+            + " — stop it with: sudo systemctl stop led_listener.service",
+        )
+    else:
+        check("no other process is driving the LEDs", True)
 
     typer.echo("")
     if failures:
