@@ -14,7 +14,8 @@ knowledge, which is the duplication worth avoiding.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -30,6 +31,8 @@ __all__ = [
     "NodeRepository",
     "Repositories",
     "SettingsRepository",
+    "StoredToken",
+    "TokenRepository",
 ]
 
 
@@ -326,6 +329,91 @@ class LiveStateRepository:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class StoredToken:
+    """An OAuth token as persisted.
+
+    Separate from the provider's own token handling so the storage layer does
+    not need to know what a Twitch token means.
+    """
+
+    access_token: str
+    refresh_token: str | None = None
+    expires_at: datetime | None = None
+    scopes: str = ""
+    obtained_at: datetime | None = None
+
+    def is_fresh(self, now: datetime, margin: timedelta = timedelta(minutes=5)) -> bool:
+        """Whether this is still usable, with a margin so a request cannot race
+        the expiry."""
+        if self.expires_at is None:
+            # Unknown expiry: assume usable and let a 401 correct us. Refusing
+            # to try would strand a token that is probably fine.
+            return True
+        return now + margin < self.expires_at
+
+
+class TokenRepository:
+    """OAuth tokens for providers that authenticate as a user.
+
+    Twitch EventSub over WebSocket needs one: creating a subscription on that
+    transport is refused for an app access token. The refresh token has to
+    survive restarts, so it cannot live in memory.
+    """
+
+    __slots__ = ("_db",)
+
+    _COLUMNS = "provider, access_token, refresh_token, expires_at, scopes, obtained_at"
+
+    def __init__(self, db: Database) -> None:
+        self._db = db
+
+    async def get(self, provider: str) -> StoredToken | None:
+        row = await self._db.fetch_one(
+            f"SELECT {self._COLUMNS} FROM oauth_tokens WHERE provider = ?", (provider.lower(),)
+        )
+        if row is None:
+            return None
+        return StoredToken(
+            access_token=row["access_token"],
+            refresh_token=row["refresh_token"],
+            expires_at=_from_iso(row["expires_at"]),
+            scopes=row["scopes"] or "",
+            obtained_at=_from_iso(row["obtained_at"]),
+        )
+
+    async def save(self, provider: str, token: StoredToken) -> None:
+        await self._db.execute(
+            f"INSERT INTO oauth_tokens ({self._COLUMNS}) VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT (provider) DO UPDATE SET "
+            "access_token = excluded.access_token, refresh_token = excluded.refresh_token, "
+            "expires_at = excluded.expires_at, scopes = excluded.scopes, "
+            "obtained_at = excluded.obtained_at",
+            (
+                provider.lower(),
+                token.access_token,
+                token.refresh_token,
+                _to_iso(token.expires_at),
+                token.scopes,
+                _to_iso(token.obtained_at or datetime.now(UTC)),
+            ),
+        )
+
+    async def delete(self, provider: str) -> bool:
+        """Forget a token, so the next use requires logging in again."""
+        return (
+            await self._db.execute(
+                "DELETE FROM oauth_tokens WHERE provider = ?", (provider.lower(),)
+            )
+            > 0
+        )
+
+    async def providers(self) -> list[str]:
+        """Which providers have a stored token. Never returns the tokens."""
+        rows = await self._db.fetch_all("SELECT provider FROM oauth_tokens ORDER BY provider")
+        return [row["provider"] for row in rows]
+
+
 class SettingsRepository:
     """Runtime settings, as JSON values keyed by name.
 
@@ -371,10 +459,11 @@ class Repositories:
     does not change the signature of everything that needs storage.
     """
 
-    __slots__ = ("channels", "live_state", "nodes", "settings")
+    __slots__ = ("channels", "live_state", "nodes", "settings", "tokens")
 
     def __init__(self, db: Database) -> None:
         self.channels = ChannelRepository(db)
         self.nodes = NodeRepository(db)
         self.live_state = LiveStateRepository(db)
         self.settings = SettingsRepository(db)
+        self.tokens = TokenRepository(db)

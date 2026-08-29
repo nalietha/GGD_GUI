@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import AsyncIterator, Iterable, Sequence
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Self
@@ -84,10 +84,20 @@ class Database:
         if not self.is_memory:
             Path(self._path).parent.mkdir(parents=True, exist_ok=True)
 
+        is_new = not self.is_memory and not Path(self._path).exists()
+
         try:
             connection = await aiosqlite.connect(self._path)
         except aiosqlite.Error as exc:
             raise StorageError(f"cannot open database {self._path}: {exc}") from exc
+
+        if is_new:
+            # The database holds OAuth refresh tokens, so it is owner-only from
+            # the moment it exists rather than after the first token is written.
+            # Only tightened on creation: an operator who deliberately widened
+            # the mode should not have it silently reverted on every start.
+            with suppress(OSError):
+                Path(self._path).chmod(0o600)
 
         connection.row_factory = aiosqlite.Row
 

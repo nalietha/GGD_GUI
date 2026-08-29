@@ -116,3 +116,13 @@ def provider(http: httpx.AsyncClient, token_source: AppTokenSource) -> TwitchPro
 
 
 ResponseFactory = Callable[[], httpx.Response]
+
+
+@pytest.fixture
+async def repos(tmp_path):
+    """A migrated database for token-storage tests."""
+    from livepulse.storage.db import IN_MEMORY, Database
+    from livepulse.storage.repositories import Repositories
+
+    async with Database(IN_MEMORY) as db:
+        yield Repositories(db)
