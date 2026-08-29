@@ -641,3 +641,91 @@ async def _check_channels(
 
     if failures:
         raise typer.Exit(code=1)
+
+
+@provider_app.command("login")
+def provider_login(
+    provider_id: Annotated[str, typer.Argument(help="Platform to authorise.")] = "twitch",
+    config: ConfigOption = None,
+) -> None:
+    """Authorise LivePulse as a user, via the device-code flow.
+
+    Needed for Twitch EventSub: creating a subscription on the WebSocket
+    transport is refused for an app access token. Device code suits a headless
+    Pi — no browser on the device, no redirect URL, nothing reachable from the
+    internet. A short code is shown, entered elsewhere, and the refresh token
+    keeps it alive from then on, so this is a once-ever step.
+    """
+    settings = _load(config)
+    configure_logging(level=settings.log_level, json=settings.log_json)
+
+    if provider_id.lower() != "twitch":
+        typer.secho(
+            f"{provider_id} does not use a user login; only twitch does today",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    asyncio.run(_login_twitch(settings))
+
+
+async def _login_twitch(settings: Settings) -> None:
+    import httpx
+
+    from livepulse.providers.twitch.userauth import DeviceCodeFlow
+
+    secrets = provider_secrets("twitch")
+    client_id = secrets.get("client_id")
+    if not client_id:
+        typer.secho("set LIVEPULSE_SECRET_TWITCH_CLIENT_ID first", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2)
+
+    async with httpx.AsyncClient(timeout=settings.ingest.request_timeout) as http:
+        flow = DeviceCodeFlow(client_id, http)
+
+        try:
+            grant = await flow.start()
+        except LivePulseError as exc:
+            typer.secho(str(exc), fg=typer.colors.RED, err=True)
+            raise typer.Exit(code=2) from exc
+
+        typer.echo("")
+        typer.secho("  Open this page and enter the code:", bold=True)
+        typer.secho(f"    {grant.verification_uri}", fg=typer.colors.CYAN)
+        typer.secho(f"    {grant.user_code}", fg=typer.colors.GREEN, bold=True)
+        typer.echo("")
+        typer.echo(f"  Waiting for approval (expires in {grant.expires_in / 60:.0f} min)...")
+
+        try:
+            token = await flow.poll(grant)
+        except LivePulseError as exc:
+            typer.secho(str(exc), fg=typer.colors.RED, err=True)
+            raise typer.Exit(code=1) from exc
+
+    async with Database(settings.db_path) as db:
+        await Repositories(db).tokens.save("twitch", token)
+
+    typer.secho("  authorised — token stored", fg=typer.colors.GREEN, bold=True)
+    if token.refresh_token:
+        typer.echo("  A refresh token was saved, so this should not be needed again.")
+
+
+@provider_app.command("logout")
+def provider_logout(
+    provider_id: Annotated[str, typer.Argument(help="Platform to forget.")] = "twitch",
+    config: ConfigOption = None,
+) -> None:
+    """Delete a stored user token."""
+    settings = _load(config)
+    asyncio.run(_logout(provider_id, settings))
+
+
+async def _logout(provider_id: str, settings: Settings) -> None:
+    async with Database(settings.db_path) as db:
+        removed = await Repositories(db).tokens.delete(provider_id)
+
+    if removed:
+        typer.secho(f"forgot the {provider_id} token", fg=typer.colors.GREEN)
+    else:
+        typer.secho(f"no stored token for {provider_id}", fg=typer.colors.YELLOW)

@@ -31,6 +31,7 @@ daemon arrives in Phase 3 with the web UI. What you can exercise now:
 | `livepulse migrate-v1` | No | Your real V1 config imports cleanly |
 | `livepulse provider list` | No | Which platforms exist, and whether credentials are set |
 | `livepulse provider check` | No | Real Twitch call: credentials, resolution, live status |
+| `livepulse provider login` | No | One-time user authorisation, needed for EventSub push |
 | `livepulse leds test` | **Yes** | Power, data line, colour order |
 | `livepulse leds identify` | **Yes** | Layout matches the physical stand |
 | `livepulse leds demo` | **Yes** | The full pipeline on your real config |
@@ -124,6 +125,25 @@ lp provider check twitch.tv/ironmouse twitch.tv/dokibird
 
 That resolves each name to its numeric Twitch id and polls both in **one**
 batched request. Nothing is written to the database.
+
+### Authorise for push (once, ever)
+
+Polling uses an app token. **EventSub over WebSocket will not accept one** — a
+subscription on that transport requires a *user* token. Device code is how a
+headless Pi gets one: no browser on the device, no redirect URL, nothing
+reachable from the internet.
+
+```bash
+lp provider login twitch
+```
+
+It prints a URL and a short code; enter them on your phone or laptop. The
+refresh token is then stored and kept alive automatically, so this is a
+once-ever step rather than something you redo. `lp provider logout twitch`
+forgets it.
+
+The token lives in the database, which is created mode `0600` for that reason.
+The client id and secret still live only in the environment.
 
 Credentials come from the environment and are deliberately never part of the
 settings object, so `lp config --json` cannot print them. Put the two exports in

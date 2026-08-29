@@ -7,13 +7,18 @@ from pathlib import Path
 import pytest
 
 from livepulse.core.errors import MigrationError, StorageError
-from livepulse.storage.db import IN_MEMORY, Database
+from livepulse.storage.db import IN_MEMORY, MIGRATIONS_DIR, Database
+
+
+def latest_migration_version() -> int:
+    """Derived, not hardcoded, so adding a migration does not break this."""
+    return max(int(path.name.split("_", 1)[0]) for path in MIGRATIONS_DIR.glob("*.sql"))
 
 
 class TestLifecycle:
     async def test_context_manager_connects_and_migrates(self) -> None:
         async with Database(IN_MEMORY) as db:
-            assert await db.schema_version() == 1
+            assert await db.schema_version() == latest_migration_version()
 
     async def test_using_before_connect_is_a_clear_error(self) -> None:
         with pytest.raises(StorageError, match="not connected"):
@@ -49,8 +54,9 @@ class TestLifecycle:
 
 class TestMigration:
     async def test_is_idempotent(self, db: Database) -> None:
-        assert await db.migrate() == 1
-        assert await db.migrate() == 1
+        latest = latest_migration_version()
+        assert await db.migrate() == latest
+        assert await db.migrate() == latest
 
     async def test_applies_pending_migrations_in_order(self, tmp_path: Path) -> None:
         migrations = tmp_path / "migrations"

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
 
 from livepulse.core.errors import StorageError
 from livepulse.core.models import Channel, LiveState, StateSource
-from livepulse.storage.repositories import Repositories
+from livepulse.storage.repositories import Repositories, StoredToken
 
 
 class TestChannelRepository:
@@ -274,3 +274,77 @@ class TestSettingsRepository:
         await repos.settings.set("k", 1)
         assert await repos.settings.delete("k") is True
         assert await repos.settings.get("k", "default") == "default"
+
+
+class TestTokenRepository:
+    """OAuth tokens for providers that authenticate as a user.
+
+    Twitch EventSub over WebSocket refuses an app access token, so a user token
+    and its refresh token must survive restarts.
+    """
+
+    async def test_round_trips(self, repos: Repositories) -> None:
+        expires = datetime(2026, 6, 1, 12, 0, tzinfo=UTC)
+        await repos.tokens.save(
+            "twitch",
+            StoredToken(
+                access_token="a", refresh_token="r", expires_at=expires, scopes="user:read"
+            ),
+        )
+
+        stored = await repos.tokens.get("twitch")
+        assert stored is not None
+        assert (stored.access_token, stored.refresh_token) == ("a", "r")
+        assert stored.expires_at == expires
+        assert stored.scopes == "user:read"
+
+    async def test_missing_provider_returns_none(self, repos: Repositories) -> None:
+        assert await repos.tokens.get("twitch") is None
+
+    async def test_saving_twice_replaces(self, repos: Repositories) -> None:
+        """Refreshing must overwrite, not accumulate."""
+        await repos.tokens.save("twitch", StoredToken(access_token="old"))
+        await repos.tokens.save("twitch", StoredToken(access_token="new"))
+
+        stored = await repos.tokens.get("twitch")
+        assert stored is not None
+        assert stored.access_token == "new"
+
+    async def test_provider_is_case_insensitive(self, repos: Repositories) -> None:
+        await repos.tokens.save("Twitch", StoredToken(access_token="a"))
+        assert await repos.tokens.get("TWITCH") is not None
+
+    async def test_delete_forces_a_fresh_login(self, repos: Repositories) -> None:
+        await repos.tokens.save("twitch", StoredToken(access_token="a"))
+        assert await repos.tokens.delete("twitch") is True
+        assert await repos.tokens.get("twitch") is None
+
+    async def test_providers_lists_without_exposing_tokens(self, repos: Repositories) -> None:
+        await repos.tokens.save("twitch", StoredToken(access_token="secret"))
+        assert await repos.tokens.providers() == ["twitch"]
+
+    async def test_obtained_at_defaults_to_now(self, repos: Repositories) -> None:
+        await repos.tokens.save("twitch", StoredToken(access_token="a"))
+        stored = await repos.tokens.get("twitch")
+        assert stored is not None
+        assert stored.obtained_at is not None
+
+
+class TestStoredTokenFreshness:
+    def test_a_future_expiry_is_fresh(self) -> None:
+        token = StoredToken(access_token="a", expires_at=datetime(2030, 1, 1, tzinfo=UTC))
+        assert token.is_fresh(datetime(2026, 1, 1, tzinfo=UTC)) is True
+
+    def test_a_past_expiry_is_stale(self) -> None:
+        token = StoredToken(access_token="a", expires_at=datetime(2026, 1, 1, tzinfo=UTC))
+        assert token.is_fresh(datetime(2030, 1, 1, tzinfo=UTC)) is False
+
+    def test_the_margin_prevents_racing_an_expiry(self) -> None:
+        now = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+        token = StoredToken(access_token="a", expires_at=now + timedelta(minutes=1))
+        assert token.is_fresh(now) is False, "one minute left should count as stale"
+
+    def test_an_unknown_expiry_is_assumed_usable(self) -> None:
+        """Refusing to try would strand a token that is probably fine; a 401
+        corrects us cheaply."""
+        assert StoredToken(access_token="a").is_fresh(datetime(2026, 1, 1, tzinfo=UTC)) is True
