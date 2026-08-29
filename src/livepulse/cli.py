@@ -20,7 +20,12 @@ from typing import Annotated
 import typer
 
 from livepulse import __version__
-from livepulse.config.settings import Settings, default_config_path, load_settings
+from livepulse.config.settings import (
+    Settings,
+    default_config_path,
+    load_settings,
+    provider_secrets,
+)
 from livepulse.core.errors import LivePulseError
 from livepulse.core.models import DisplayMode, LiveState, StateSource
 from livepulse.hardware import conflicting_led_processes
@@ -32,6 +37,13 @@ from livepulse.leds.layout import Layout
 from livepulse.leds.renderer import Renderer
 from livepulse.leds.state import build_render_state
 from livepulse.logging import configure_logging
+from livepulse.providers import (
+    capabilities,
+    create_provider,
+    describe_providers,
+    resolve_input,
+)
+from livepulse.providers.base import ProviderConfig
 from livepulse.storage.db import Database
 from livepulse.storage.import_v1 import ImportPlan, apply_plan, build_plan, read_v1_files
 from livepulse.storage.repositories import Repositories
@@ -509,3 +521,123 @@ async def _apply_import(plan: ImportPlan, settings: Settings) -> None:
     except LivePulseError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(code=2) from exc
+
+
+# --------------------------------------------------------------------------- #
+# provider
+# --------------------------------------------------------------------------- #
+
+provider_app = typer.Typer(help="Inspect and test stream platforms.", no_args_is_help=True)
+app.add_typer(provider_app, name="provider")
+
+
+def _provider_config(provider_id: str, settings: Settings) -> ProviderConfig:
+    """Build a provider's configuration, pulling credentials from the environment.
+
+    Secrets never pass through the Settings object, so nothing that dumps
+    settings can leak them.
+    """
+    return ProviderConfig(
+        provider_id=provider_id,
+        secrets=provider_secrets(provider_id),
+        timeout=settings.ingest.request_timeout,
+    )
+
+
+@provider_app.command("list")
+def provider_list() -> None:
+    """List platforms, their capabilities, and whether credentials are present."""
+    for provider_id, description in describe_providers().items():
+        caps = capabilities(provider_id)
+        secrets = provider_secrets(provider_id)
+
+        if caps.needs_auth.value == "none":
+            auth = "no credentials needed"
+            colour = typer.colors.GREEN
+        elif secrets:
+            auth = f"credentials found ({', '.join(sorted(secrets))})"
+            colour = typer.colors.GREEN
+        else:
+            auth = f"needs {caps.needs_auth.value} — set LIVEPULSE_SECRET_{provider_id.upper()}_*"
+            colour = typer.colors.YELLOW
+
+        typer.secho(f"  {provider_id:<10} {description}", bold=True)
+        typer.secho(f"             {auth}", fg=colour)
+        typer.echo(
+            f"             batch {caps.max_batch}, "
+            f"min interval {caps.min_poll_interval:g}s, "
+            f"push {'yes' if caps.supports_push else 'no'}"
+        )
+
+
+@provider_app.command("check")
+def provider_check(
+    handles: Annotated[list[str], typer.Argument(help="Channel names or URLs.")],
+    config: ConfigOption = None,
+    provider_id: Annotated[
+        str | None,
+        typer.Option("--provider", help="Platform to use for bare handles.", show_default=False),
+    ] = None,
+) -> None:
+    """Resolve channels and report whether they are live, right now.
+
+    A real end-to-end check against the platform: credentials, resolution, and
+    a live batched poll. Nothing is written to the database.
+    """
+    settings = _load(config)
+    configure_logging(level=settings.log_level, json=settings.log_json)
+    asyncio.run(_check_channels(handles, provider_id, settings))
+
+
+async def _check_channels(
+    handles: list[str], default_provider: str | None, settings: Settings
+) -> None:
+    # Group by platform first, so one batched request covers each.
+    wanted: dict[str, list[str]] = {}
+    for entry in handles:
+        try:
+            resolved_provider, handle = resolve_input(entry, default_provider)
+        except LivePulseError as exc:
+            typer.secho(str(exc), fg=typer.colors.RED, err=True)
+            raise typer.Exit(code=2) from exc
+        wanted.setdefault(resolved_provider, []).append(handle)
+
+    failures = 0
+    for provider_id, names in wanted.items():
+        try:
+            provider = create_provider(provider_id, _provider_config(provider_id, settings))
+        except LivePulseError as exc:
+            typer.secho(f"{provider_id}: {exc}", fg=typer.colors.RED, err=True)
+            failures += 1
+            continue
+
+        try:
+            refs = []
+            for name in names:
+                try:
+                    refs.append(await provider.resolve(name))
+                except LivePulseError as exc:
+                    typer.secho(f"  {name:<20} {exc}", fg=typer.colors.RED)
+                    failures += 1
+
+            if not refs:
+                continue
+
+            states = await provider.poll(refs)
+            typer.secho(f"{provider_id} ({len(refs)} channel(s), 1 request)", bold=True)
+
+            for channel_ref in refs:
+                state = states[channel_ref.platform_ref]
+                mark = "LIVE" if state.is_live else "offline"
+                colour = typer.colors.GREEN if state.is_live else typer.colors.BRIGHT_BLACK
+                detail = f" — {state.title}" if state.is_live and state.title else ""
+                viewers = f" ({state.viewers} viewers)" if state.viewers else ""
+                typer.secho(f"  {channel_ref.handle:<20} {mark}{viewers}{detail}", fg=colour)
+        except LivePulseError as exc:
+            typer.secho(f"  {exc}", fg=typer.colors.RED)
+            failures += 1
+        finally:
+            await provider.aclose()
+
+    if failures:
+        raise typer.Exit(code=1)

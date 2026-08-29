@@ -29,6 +29,8 @@ daemon arrives in Phase 3 with the web UI. What you can exercise now:
 | `livepulse leds backends` | No | Which drivers can run on this Pi |
 | `livepulse leds layout` | No | Node → pixel mapping against your wiring |
 | `livepulse migrate-v1` | No | Your real V1 config imports cleanly |
+| `livepulse provider list` | No | Which platforms exist, and whether credentials are set |
+| `livepulse provider check` | No | Real Twitch call: credentials, resolution, live status |
 | `livepulse leds test` | **Yes** | Power, data line, colour order |
 | `livepulse leds identify` | **Yes** | Layout matches the physical stand |
 | `livepulse leds demo` | **Yes** | The full pipeline on your real config |
@@ -105,6 +107,27 @@ expected at this stage, and is exactly what it is for:
 Check `leds layout` against your stand. Logical node 0 should be the leftmost
 slot. If the mapping looks wrong, that is a config fix, not a code fix — see
 `docs/hardware.md`.
+
+### Check Twitch for real
+
+Create an application at <https://dev.twitch.tv/console/apps> to get a client id
+and secret. An app token needs no user login and no redirect URL — set the OAuth
+redirect to `http://localhost` and never use it.
+
+```bash
+export LIVEPULSE_SECRET_TWITCH_CLIENT_ID=...
+export LIVEPULSE_SECRET_TWITCH_CLIENT_SECRET=...
+
+lp provider list                                   # confirms they were found
+lp provider check twitch.tv/ironmouse twitch.tv/dokibird
+```
+
+That resolves each name to its numeric Twitch id and polls both in **one**
+batched request. Nothing is written to the database.
+
+Credentials come from the environment and are deliberately never part of the
+settings object, so `lp config --json` cannot print them. Put the two exports in
+a `.env` beside the repo, or in `~/.profile` — not in `config.toml`.
 
 ### Import your real V1 config
 
