@@ -4,7 +4,10 @@ Importing this package registers the built-in providers, so callers only need
 :func:`~livepulse.providers.registry.create_provider`.
 """
 
-from livepulse.providers import manual  # noqa: F401  - registers on import
+from livepulse.providers import (
+    manual,  # noqa: F401  - registers on import
+    twitch,  # noqa: F401  - registers on import
+)
 from livepulse.providers.base import (
     BaseProvider,
     Capabilities,

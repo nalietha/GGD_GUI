@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 import tomllib
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal
 
@@ -38,10 +39,17 @@ __all__ = [
     "WebSettings",
     "default_config_path",
     "load_settings",
+    "provider_secrets",
 ]
 
 ENV_PREFIX = "LIVEPULSE_"
 ENV_CONFIG_PATH = "LIVEPULSE_CONFIG"
+
+#: Credentials arrive as LIVEPULSE_SECRET_<PROVIDER>_<KEY>. Kept out of the
+#: Settings model entirely so they can never be rendered by the config
+#: command or the web UI — V1 kept the Twitch secret in the same file its
+#: settings page rewrote.
+ENV_SECRET_PREFIX = "LIVEPULSE_SECRET_"
 
 NodeOrder = Literal["linear", "serpentine", "custom"]
 
@@ -224,6 +232,23 @@ class Settings(BaseSettings):
         stale file on disk.
         """
         return (env_settings, dotenv_settings, init_settings, file_secret_settings)
+
+
+def provider_secrets(provider_id: str, environ: Mapping[str, str] | None = None) -> dict[str, str]:
+    """Credentials for one provider, read from the environment.
+
+    ``LIVEPULSE_SECRET_TWITCH_CLIENT_ID`` becomes ``{"client_id": ...}``.
+    Deliberately not part of :class:`Settings`: a value that is never in the
+    settings object cannot be leaked by something that dumps the settings.
+    """
+    env = os.environ if environ is None else environ
+    prefix = f"{ENV_SECRET_PREFIX}{provider_id.upper()}_"
+
+    return {
+        key[len(prefix) :].lower(): value
+        for key, value in env.items()
+        if key.startswith(prefix) and value
+    }
 
 
 def default_config_path() -> Path | None:

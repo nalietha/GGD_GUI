@@ -11,7 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from livepulse.config.settings import LayoutSettings, Settings, load_settings
+from livepulse.config.settings import (
+    LayoutSettings,
+    Settings,
+    load_settings,
+    provider_secrets,
+)
 from livepulse.core.errors import ConfigError
 
 
@@ -106,3 +111,50 @@ class TestPaths:
 
     def test_data_dir_expands_user(self) -> None:
         assert not str(Settings(data_dir=Path("~/lp")).data_dir).startswith("~")
+
+
+class TestProviderSecrets:
+    """Credentials are deliberately outside the Settings model.
+
+    A value that never enters the settings object cannot be leaked by anything
+    that dumps settings — `livepulse config --json`, a future web endpoint, a
+    log line. V1 kept the Twitch client secret in the very file its settings
+    page rewrote.
+    """
+
+    def test_reads_credentials_for_a_provider(self) -> None:
+        env = {
+            "LIVEPULSE_SECRET_TWITCH_CLIENT_ID": "abc",
+            "LIVEPULSE_SECRET_TWITCH_CLIENT_SECRET": "def",
+        }
+        assert provider_secrets("twitch", env) == {"client_id": "abc", "client_secret": "def"}
+
+    def test_ignores_other_providers(self) -> None:
+        env = {
+            "LIVEPULSE_SECRET_TWITCH_CLIENT_ID": "abc",
+            "LIVEPULSE_SECRET_YOUTUBE_API_KEY": "xyz",
+        }
+        assert provider_secrets("youtube", env) == {"api_key": "xyz"}
+
+    def test_ignores_ordinary_settings(self) -> None:
+        env = {"LIVEPULSE_LEDS__BACKEND": "sim", "LIVEPULSE_SECRET_TWITCH_CLIENT_ID": "abc"}
+        assert provider_secrets("twitch", env) == {"client_id": "abc"}
+
+    def test_empty_values_count_as_absent(self) -> None:
+        """V1 shipped appsettings.json with ClientId: "" and failed obscurely."""
+        assert provider_secrets("twitch", {"LIVEPULSE_SECRET_TWITCH_CLIENT_ID": ""}) == {}
+
+    def test_provider_id_is_case_insensitive(self) -> None:
+        env = {"LIVEPULSE_SECRET_TWITCH_CLIENT_ID": "abc"}
+        assert provider_secrets("Twitch", env) == {"client_id": "abc"}
+
+    def test_no_credentials_is_an_empty_mapping(self) -> None:
+        assert provider_secrets("twitch", {}) == {}
+
+    def test_secrets_never_appear_in_the_settings_dump(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The guarantee, asserted rather than assumed."""
+        monkeypatch.setenv("LIVEPULSE_SECRET_TWITCH_CLIENT_SECRET", "super-secret")
+        dumped = str(load_settings(None).model_dump())
+        assert "super-secret" not in dumped
