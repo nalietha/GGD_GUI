@@ -384,7 +384,7 @@ Each phase ends with something runnable.
 | **1 — Render core** | Driver protocol + `ws281x` + `spi`, layout descriptor, gamma, frame thread, compositor, six effects, golden-frame tests | Real lights, real animations, no network |
 | **2 — Providers (poll)** | Provider protocol, registry, scheduler with batching/jitter/rate limits, `twitch` poller, `manual`, `owncast` | Feature parity with V1's working path, correctly |
 | **3 — Web** | FastAPI, dashboard, channels, settings, SSE, REST API, `migrate-v1`, **off button + quiet-hours schedule** (§16) | V1 replaceable end-to-end; **cut over here** |
-| **4 — Push** | Twitch EventSub WebSocket + device-code auth, connection supervisor, inbound webhook provider | Sub-second go-live reaction |
+| **4 — Push** | ~~Twitch EventSub WebSocket~~, ~~device-code auth~~, ~~connection supervisor~~; inbound webhook provider still to do | Sub-second go-live reaction |
 | **5 — Breadth** | `generic_http` declarative provider, YouTube, Kick, HLS probe, provider health UI | The actual decoupling-from-Twitch goal, delivered |
 | **6 — Polish** | WiFi provisioning, hotspot fallback, mDNS, systemd hardening, install script, docs, `leds identify` | Shippable to someone who isn't you |
 

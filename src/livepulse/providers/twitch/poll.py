@@ -34,9 +34,17 @@ from livepulse.core.errors import (
     ProviderRateLimited,
 )
 from livepulse.core.models import AuthKind, ChannelRef, LiveState, StateSource
-from livepulse.providers.base import BaseProvider, Capabilities, ProviderConfig, handle_from_url
+from livepulse.providers.base import (
+    BaseProvider,
+    Capabilities,
+    ProviderConfig,
+    PushSession,
+    handle_from_url,
+)
 from livepulse.providers.registry import register_provider
 from livepulse.providers.twitch.auth import AppTokenSource
+from livepulse.providers.twitch.eventsub import ConnectFn, EventSubWatcher
+from livepulse.providers.twitch.userauth import UserTokenSource
 
 __all__ = ["PROVIDER_ID", "TwitchProvider"]
 
@@ -68,9 +76,10 @@ class TwitchProvider(BaseProvider):
     caps = Capabilities(
         supports_batch=True,
         max_batch=MAX_BATCH,
-        # Flipped on when the EventSub watcher lands; the scheduler reads this
-        # to decide whether a channel can be covered by a subscription.
-        supports_push=False,
+        # Twitch supports push, but only with a user token. A provider built
+        # without one still satisfies this contract for polling; watch() then
+        # says what to do about it.
+        supports_push=True,
         needs_auth=AuthKind.OAUTH_APP,
         min_poll_interval=MIN_POLL_INTERVAL,
     )
@@ -80,6 +89,8 @@ class TwitchProvider(BaseProvider):
         config: ProviderConfig,
         http: httpx.AsyncClient | None = None,
         auth: AppTokenSource | None = None,
+        user_auth: UserTokenSource | None = None,
+        connect: ConnectFn | None = None,
     ) -> None:
         super().__init__(config)
 
@@ -96,6 +107,29 @@ class TwitchProvider(BaseProvider):
                 config.require_secret("client_secret"),
                 self._http,
             )
+
+        # Push needs a user token, which needs the database, which the registry
+        # factory has no access to. So it is injected by the composition root;
+        # a registry-built provider is poll-only and watch() explains why.
+        self._user_auth = user_auth
+        self._connect = connect
+
+    async def watch(self, refs: Sequence[ChannelRef], session: PushSession) -> None:
+        """Hold an EventSub subscription for these channels.
+
+        Raises:
+            ProviderAuthError: no user token is configured. The WebSocket
+                transport refuses an app token, so this is not something the
+                process can resolve on its own.
+        """
+        if self._user_auth is None:
+            raise ProviderAuthError(
+                PROVIDER_ID,
+                "EventSub needs a user token — run 'livepulse provider login twitch'",
+            )
+
+        watcher = EventSubWatcher(self._user_auth, self._http, connect=self._connect)
+        await watcher.watch(refs, session)
 
     async def aclose(self) -> None:
         """Close the HTTP client, but only if we created it."""

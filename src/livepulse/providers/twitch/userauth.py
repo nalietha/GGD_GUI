@@ -141,7 +141,7 @@ class DeviceCodeFlow:
                 continue
             if "slow_down" in message:
                 # Twitch says we are asking too often; obey rather than persist.
-                interval += max(self._min_interval, 1.0)
+                interval += self._min_interval
                 continue
 
             raise ProviderAuthError(PROVIDER, f"authorisation failed: {message}")
