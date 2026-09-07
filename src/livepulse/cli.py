@@ -484,6 +484,56 @@ async def _run_demo(
 
 
 # --------------------------------------------------------------------------- #
+# display
+# --------------------------------------------------------------------------- #
+
+
+@app.command()
+def display(
+    mode: Annotated[
+        DisplayMode | None,
+        typer.Argument(help="off | ambient | streamer. Omit to show the current mode."),
+    ] = None,
+    config: ConfigOption = None,
+) -> None:
+    """Show or set the display mode — 'livepulse display off' is the off switch.
+
+    Talks to the running service over its HTTP API, never the database. The
+    daemon caches settings in memory, so a direct database write would change
+    nothing until a restart — exactly the two-processes-disagreeing failure V1
+    was built on. One write path, whoever is writing.
+    """
+    import httpx
+
+    settings = _load(config)
+
+    # The service binds all interfaces by default; loopback always reaches it.
+    host = settings.web.host if settings.web.host not in ("0.0.0.0", "::") else "127.0.0.1"
+    base = f"http://{host}:{settings.web.port}"
+
+    try:
+        if mode is None:
+            response = httpx.get(f"{base}/api/v1/settings", timeout=5.0)
+        else:
+            response = httpx.patch(
+                f"{base}/api/v1/settings", json={"mode": mode.value}, timeout=5.0
+            )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        typer.secho(
+            f"could not reach the service at {base} — is 'livepulse run' running? ({exc})",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1) from exc
+
+    current = response.json()
+    colour = typer.colors.BRIGHT_BLACK if current["mode"] == "off" else typer.colors.GREEN
+    typer.secho(f"mode       : {current['mode']}", fg=colour, bold=True)
+    typer.echo(f"brightness : {current['brightness']}")
+
+
+# --------------------------------------------------------------------------- #
 # migrate-v1
 # --------------------------------------------------------------------------- #
 

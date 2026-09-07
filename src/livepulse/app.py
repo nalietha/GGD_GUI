@@ -59,6 +59,7 @@ from livepulse.leds.state import build_render_state
 from livepulse.providers import Provider, ProviderConfig, PushProvider, create_provider
 from livepulse.providers.twitch import PROVIDER_ID as TWITCH_ID
 from livepulse.providers.twitch import TwitchProvider, UserTokenSource
+from livepulse.schedule import ScheduleService
 from livepulse.storage.db import Database
 from livepulse.storage.repositories import Repositories
 from livepulse.storage.runtime import RuntimeSettingsStore
@@ -460,6 +461,11 @@ async def run_service(
             asyncio.create_task(scheduler.run(), name="livepulse-ingest"),
         ]
         await supervisor.start()
+
+        if settings.schedule.enabled:
+            quiet_hours = ScheduleService(settings.schedule, store, repos.settings)
+            await quiet_hours.load()
+            tasks.append(asyncio.create_task(quiet_hours.run(), name="livepulse-schedule"))
 
         web_server, web_task = _start_web(
             settings,
