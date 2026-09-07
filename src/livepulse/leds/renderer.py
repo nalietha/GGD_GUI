@@ -112,6 +112,16 @@ class Renderer:
         return self._compositor
 
     @property
+    def state(self) -> RenderState | None:
+        """The most recently submitted snapshot, or ``None`` before the first.
+
+        Read by the web preview, so the browser reports what the strip is
+        actually being asked to show — V1 re-implemented the preview in Razor
+        and the two drifted apart.
+        """
+        return self._state
+
+    @property
     def elapsed(self) -> float:
         """Seconds since construction, in the time base effects are sampled with.
 

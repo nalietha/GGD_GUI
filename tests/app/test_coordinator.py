@@ -242,6 +242,54 @@ class TestConfigChanges:
         assert env.frame()[0] == BLACK
 
 
+class TestProviderProvisioning:
+    """A platform is built the first time a channel actually needs it.
+
+    This is what lets someone on a fresh install add a channel through the
+    web UI and see it polled without restarting the service.
+    """
+
+    async def test_bound_channel_provisions_its_platform(self, env: Env) -> None:
+        provisioned: list[str] = []
+
+        async def ensure(provider_id: str) -> None:
+            provisioned.append(provider_id)
+
+        coordinator = Coordinator(
+            env.bus,
+            env.repos,
+            env.store,
+            env.renderer,
+            env.scheduler,
+            clock=env.clock,
+            ensure_provider=ensure,
+        )
+        await env.add_channel("alice", node=0)
+        await coordinator.start()
+
+        assert provisioned == ["manual"]
+
+    async def test_unbound_channel_provisions_nothing(self, env: Env) -> None:
+        provisioned: list[str] = []
+
+        async def ensure(provider_id: str) -> None:
+            provisioned.append(provider_id)
+
+        coordinator = Coordinator(
+            env.bus,
+            env.repos,
+            env.store,
+            env.renderer,
+            env.scheduler,
+            clock=env.clock,
+            ensure_provider=ensure,
+        )
+        await env.add_channel("alice", node=None)
+        await coordinator.start()
+
+        assert provisioned == []
+
+
 class TestRun:
     async def test_dispatches_events_from_the_bus(self, env: Env) -> None:
         channel = await env.add_channel("alice", node=0)

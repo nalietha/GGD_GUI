@@ -85,6 +85,24 @@ class Subscription(Generic[E]):
             self._queue.get_nowait()
             self._queue.put_nowait(None)
 
+    async def next_event(self, timeout: float | None = None) -> E | None:
+        """The next event, ``None`` once the subscription is closed.
+
+        Unlike cancelling ``anext()`` on the iterator — which kills the
+        generator and silently ends the stream — a timeout here consumes
+        nothing and is safe to retry. That is what a keep-alive loop needs:
+        the SSE stream waits with a timeout, emits a heartbeat, and waits
+        again on the same subscription.
+
+        Raises:
+            TimeoutError: nothing arrived in time.
+        """
+        if timeout is None:
+            event = await self._queue.get()
+        else:
+            event = await asyncio.wait_for(self._queue.get(), timeout)
+        return event  # type: ignore[return-value]  # guarded by `matches` at publish time
+
     def __aiter__(self) -> AsyncIterator[E]:
         return self._iterate()
 
