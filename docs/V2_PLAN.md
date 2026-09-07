@@ -383,12 +383,25 @@ Each phase ends with something runnable.
 | **0 — Skeleton** | Repo layout, `pyproject.toml`, CI, config loader, event bus, models, SQLite + migrations, `sim` LED backend, `livepulse doctor` | `python -m livepulse` runs on a laptop with a simulated strip |
 | **1 — Render core** | Driver protocol + `ws281x` + `spi`, layout descriptor, gamma, frame thread, compositor, six effects, golden-frame tests | Real lights, real animations, no network |
 | **2 — Providers (poll)** | Provider protocol, registry, scheduler with batching/jitter/rate limits, `twitch` poller, `manual`, `owncast` | Feature parity with V1's working path, correctly |
-| **3 — Web** | FastAPI, dashboard, channels, settings, SSE, REST API, `migrate-v1`, **off button + quiet-hours schedule** (§16) | V1 replaceable end-to-end; **cut over here** |
+| **3 — Web** | ~~`livepulse run` (the composed daemon)~~, ~~FastAPI~~, ~~SSE~~, ~~REST API~~, ~~`migrate-v1`~~, ~~**off button + quiet-hours schedule** (§16)~~; dashboard/channels/settings HTML pages still to do | V1 replaceable end-to-end; **cut over here** |
 | **4 — Push** | ~~Twitch EventSub WebSocket~~, ~~device-code auth~~, ~~connection supervisor~~; inbound webhook provider still to do | Sub-second go-live reaction |
 | **5 — Breadth** | `generic_http` declarative provider, YouTube, Kick, HLS probe, provider health UI | The actual decoupling-from-Twitch goal, delivered |
 | **6 — Polish** | WiFi provisioning, hotspot fallback, mDNS, systemd hardening, install script, docs, `leds identify` | Shippable to someone who isn't you |
 
 Phases 0–3 are the rewrite. Phases 4–6 are the new capability.
+
+**Phase 3 status (2026-09-07).** The service runs as one process: `livepulse
+run` composes ingestion, the coordinator, the renderer, the schedule, and the
+embedded web server. The REST API under `/api/v1/` (nodes, channels, settings,
+providers, effects, preview, SSE at `/events`) is the single write path —
+every mutation persists through the repositories and announces on the bus, so
+the HTML pages that remain are a client of the API, not a second writer.
+Quiet hours are live per §16, including persisted boundary memory so restarts
+neither strand the display dark nor stomp a manual off; `livepulse display
+off` is the off switch from the shell, via HTTP. Providers are built lazily,
+so a channel added through the API for a new platform polls without a
+restart (push for it still engages at the next start). Still open from §16:
+item 4 — `AMBIENT` does not yet idle ingestion.
 
 ---
 
