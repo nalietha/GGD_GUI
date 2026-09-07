@@ -177,6 +177,17 @@ class IngestSettings(_StrictSection):
 
     request_timeout: float = Field(default=10.0, gt=0)
 
+    state_stale_after: float = Field(default=900.0, gt=0)
+    """Stored observations older than this are distrusted at startup, seconds.
+
+    After hours off, the database still says who was live at shutdown. Trusting
+    that would render stale colours and fire a go-live flash for every
+    transition that happened while nobody was watching. Older than this and the
+    channel restarts as 'never observed': dark until the first poll, which the
+    scheduler makes due immediately, and no flash — the same rule that keeps a
+    cold start quiet.
+    """
+
     @model_validator(mode="after")
     def _check_bounds(self) -> IngestSettings:
         if self.max_poll_interval < self.base_poll_interval:
