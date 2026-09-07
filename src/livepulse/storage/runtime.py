@@ -86,7 +86,15 @@ class RuntimeSettingsStore:
             log.warning("stored settings failed validation, using defaults", errors=exc.errors())
             self._current = RuntimeSettings()
 
-        if unknown := set(stored) - set(RuntimeSettings.model_fields):
+        # Keys starting with "_" are internal state other services keep in the
+        # same table (the schedule's boundary memory, say) — expected, not a
+        # misconfiguration worth a warning.
+        unknown = {
+            key
+            for key in set(stored) - set(RuntimeSettings.model_fields)
+            if not key.startswith("_")
+        }
+        if unknown:
             log.warning("ignoring unrecognised settings", keys=sorted(unknown))
 
         return self._current

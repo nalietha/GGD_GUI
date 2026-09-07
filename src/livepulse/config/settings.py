@@ -23,8 +23,10 @@ from __future__ import annotations
 import os
 import tomllib
 from collections.abc import Mapping
+from datetime import time as dt_time
 from pathlib import Path
 from typing import Any, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
@@ -35,6 +37,7 @@ __all__ = [
     "IngestSettings",
     "LayoutSettings",
     "LedSettings",
+    "ScheduleSettings",
     "Settings",
     "WebSettings",
     "default_config_path",
@@ -158,6 +161,46 @@ class WebSettings(_StrictSection):
     enabled: bool = True
 
 
+class ScheduleSettings(_StrictSection):
+    """Quiet hours: when the display goes dark on its own.
+
+    The reason this exists is recorded in the plan's operating model — V1 had
+    no off switch, so its Pi was switched off at the wall and stayed off. A
+    display you have to unplug is a display that stops getting used.
+
+    ``off`` later than ``on`` (crossing midnight) is the normal case. OFF
+    means dark-but-running: ingestion continues, so the lights are correct
+    the instant they come back.
+    """
+
+    enabled: bool = False
+
+    timezone: str = ""
+    """IANA name, e.g. ``America/Chicago``. Required when enabled — the plan
+    is explicit about never trusting system local time, because a Pi image
+    ships set to UTC and DST is real."""
+
+    off: dt_time = dt_time(22, 0)
+    """When the lights go dark."""
+
+    on: dt_time = dt_time(6, 0)
+    """When they come back."""
+
+    @model_validator(mode="after")
+    def _check_schedule(self) -> ScheduleSettings:
+        if not self.enabled:
+            return self
+        if not self.timezone:
+            raise ValueError("schedule.timezone is required when the schedule is enabled")
+        try:
+            ZoneInfo(self.timezone)
+        except (KeyError, ZoneInfoNotFoundError) as exc:
+            raise ValueError(f"unknown timezone {self.timezone!r}") from exc
+        if self.off == self.on:
+            raise ValueError("schedule.off and schedule.on cannot be the same time")
+        return self
+
+
 class IngestSettings(_StrictSection):
     """Polling and push behaviour, shared across providers.
 
@@ -216,6 +259,7 @@ class Settings(BaseSettings):
     layout: LayoutSettings = Field(default_factory=LayoutSettings)
     web: WebSettings = Field(default_factory=WebSettings)
     ingest: IngestSettings = Field(default_factory=IngestSettings)
+    schedule: ScheduleSettings = Field(default_factory=ScheduleSettings)
 
     @field_validator("data_dir")
     @classmethod
