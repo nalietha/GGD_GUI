@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from livepulse.core.models import DisplayMode, LiveState
 
 __all__ = [
+    "ChannelConfigChanged",
     "ChannelStateChanged",
     "DisplayModeChanged",
     "Event",
@@ -63,6 +64,16 @@ class NodeConfigChanged(Event):
     """A node's colour, effect, or channel binding was edited."""
 
     node_id: int
+
+
+class ChannelConfigChanged(Event):
+    """A channel was added, edited, or removed.
+
+    Carries the id only; consumers re-read from storage, which also covers
+    deletion — the id simply no longer resolves.
+    """
+
+    channel_id: UUID
 
 
 class DisplayModeChanged(Event):

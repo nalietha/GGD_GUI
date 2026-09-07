@@ -26,18 +26,21 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import signal
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import timedelta
 from uuid import UUID
 
 import httpx
 import structlog
+import uvicorn
 
 from livepulse.config.settings import Settings, provider_secrets
 from livepulse.core.bus import EventBus
 from livepulse.core.clock import Clock, SystemClock
 from livepulse.core.errors import LivePulseError, StorageError
 from livepulse.core.events import (
+    ChannelConfigChanged,
     ChannelStateChanged,
     DisplayModeChanged,
     Event,
@@ -59,6 +62,7 @@ from livepulse.providers.twitch import TwitchProvider, UserTokenSource
 from livepulse.storage.db import Database
 from livepulse.storage.repositories import Repositories
 from livepulse.storage.runtime import RuntimeSettingsStore
+from livepulse.web.app import WebContext, create_app
 
 __all__ = ["Coordinator", "run_service"]
 
@@ -81,6 +85,7 @@ class Coordinator:
         "_bus",
         "_channels",
         "_clock",
+        "_ensure_provider",
         "_live",
         "_nodes",
         "_renderer",
@@ -101,7 +106,15 @@ class Coordinator:
         *,
         clock: Clock | None = None,
         state_stale_after: float = 900.0,
+        ensure_provider: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
+        """
+        Args:
+            ensure_provider: Called with a provider id before its channels are
+                tracked, so the composition root can build platforms lazily —
+                a channel added through the web UI for a platform that was not
+                in use at startup still gets polled, without a restart.
+        """
         self._bus = bus
         self._repos = repos
         self._store = store
@@ -109,6 +122,7 @@ class Coordinator:
         self._scheduler = scheduler
         self._clock = clock or SystemClock()
         self._stale_after = timedelta(seconds=state_stale_after)
+        self._ensure_provider = ensure_provider
 
         self._channels: dict[UUID, Channel] = {}
         self._nodes: list[Node] = []
@@ -156,8 +170,26 @@ class Coordinator:
             if channel_id in self._channels
         }
 
-        self._sync_tracking()
+        wanted = self._wanted_channels()
+
+        if self._ensure_provider is not None:
+            for provider_id in sorted({channel.provider for channel in wanted.values()}):
+                await self._ensure_provider(provider_id)
+
+        self._sync_tracking(wanted)
         self.submit()
+
+    def _wanted_channels(self) -> dict[UUID, Channel]:
+        """Channels that earn ingestion: enabled, and bound to at least one node.
+
+        A configured-but-unplaced channel costs no API budget.
+        """
+        bound = {node.channel_id for node in self._nodes if node.channel_id is not None}
+        return {
+            channel_id: channel
+            for channel_id in bound
+            if (channel := self._channels.get(channel_id)) is not None and channel.enabled
+        }
 
     def submit(self) -> None:
         """Rebuild the render snapshot from the working set and publish it."""
@@ -176,7 +208,11 @@ class Coordinator:
         failure mode.
         """
         with self._bus.subscribe(
-            ChannelStateChanged, NodeConfigChanged, DisplayModeChanged, SettingChanged
+            ChannelStateChanged,
+            ChannelConfigChanged,
+            NodeConfigChanged,
+            DisplayModeChanged,
+            SettingChanged,
         ) as events:
             log.info("coordinator started")
             async for event in events:
@@ -189,8 +225,8 @@ class Coordinator:
         """Apply one event. The unit the tests drive; :meth:`run` only iterates."""
         if isinstance(event, ChannelStateChanged):
             await self._on_state_changed(event)
-        elif isinstance(event, NodeConfigChanged):
-            # Bindings, colours, or effects moved under us; the database is
+        elif isinstance(event, NodeConfigChanged | ChannelConfigChanged):
+            # Bindings, colours, or channels moved under us; the database is
             # the authority, so re-read rather than patching the cache.
             await self.reload()
         elif isinstance(event, DisplayModeChanged | SettingChanged):
@@ -233,31 +269,22 @@ class Coordinator:
     # Scheduler bookkeeping
     # ----------------------------------------------------------------- #
 
-    def _sync_tracking(self) -> None:
-        """Make the scheduler poll exactly the channels that matter.
+    def _sync_tracking(self, wanted: dict[UUID, Channel]) -> None:
+        """Make the scheduler poll exactly the given channels.
 
-        A channel earns polling by being enabled and bound to at least one
-        node; a configured-but-unplaced channel costs no API budget. Existing
-        entries are left alone — re-tracking would reset the channel's
+        Existing entries are left alone — re-tracking would reset a channel's
         schedule and its remembered previous state.
         """
-        bound = {node.channel_id for node in self._nodes if node.channel_id is not None}
-        wanted = {
-            channel_id
-            for channel_id in bound
-            if (channel := self._channels.get(channel_id)) is not None and channel.enabled
-        }
-
-        for channel_id in wanted - self._tracked:
+        for channel_id in wanted.keys() - self._tracked:
             self._scheduler.track(
                 channel_id,
-                self._channels[channel_id].ref,
+                wanted[channel_id].ref,
                 last=self._live.get(channel_id),
             )
-        for channel_id in self._tracked - wanted:
+        for channel_id in self._tracked - wanted.keys():
             self._scheduler.untrack(channel_id)
 
-        self._tracked = wanted
+        self._tracked = set(wanted)
 
 
 # --------------------------------------------------------------------------- #
@@ -365,6 +392,38 @@ async def run_service(
 
         scheduler = IngestScheduler(bus, settings.ingest)
         supervisor = PushSupervisor(scheduler)
+
+        # Providers are built lazily, the first time a channel needs one — at
+        # startup for everything already configured, and again whenever the
+        # web UI introduces a platform that was not in use when we booted.
+        # One attempt per platform per process: a failed build (missing
+        # credentials, usually) cannot be fixed without new environment, so
+        # retrying on every config edit would only repeat the error.
+        built: dict[str, _BuiltProvider] = {}
+        attempted: set[str] = set()
+        # A live view for the web layer: it must see providers built after
+        # the app was created, or resolving a newly added platform would fail.
+        running_providers: dict[str, Provider] = {}
+
+        async def ensure_provider(provider_id: str) -> None:
+            if provider_id in attempted:
+                return
+            attempted.add(provider_id)
+
+            result = await _build_providers({provider_id}, settings, repos)
+            entry = result.get(provider_id)
+            if entry is None:
+                return
+
+            built[provider_id] = entry
+            running_providers[provider_id] = entry.provider
+            scheduler.register(entry.provider)
+            if entry.push_ready:
+                log.info(
+                    "provider registered while running — push engages at next start",
+                    provider=provider_id,
+                )
+
         coordinator = Coordinator(
             bus,
             repos,
@@ -372,6 +431,7 @@ async def run_service(
             renderer,
             scheduler,
             state_stale_after=settings.ingest.state_stale_after,
+            ensure_provider=ensure_provider,
         )
 
         # Only platforms with an enabled, node-bound channel are built at all.
@@ -379,9 +439,12 @@ async def run_service(
         bound_ids = await repos.nodes.bound_channel_ids()
         active = [channel for channel in channels if channel.id in bound_ids]
 
-        built = await _build_providers({channel.provider for channel in active}, settings, repos)
+        for provider_id in sorted({channel.provider for channel in active}):
+            await ensure_provider(provider_id)
+
+        # Push subscriptions cover the channels known now. A channel added at
+        # runtime is polled until the next start upgrades it to push.
         for provider_id, entry in built.items():
-            scheduler.register(entry.provider)
             if entry.push_ready and isinstance(entry.provider, PushProvider):
                 covered = {
                     channel.id: channel.ref for channel in active if channel.provider == provider_id
@@ -398,13 +461,30 @@ async def run_service(
         ]
         await supervisor.start()
 
-        _install_signal_handlers(stopping)
+        web_server, web_task = _start_web(
+            settings,
+            stopping,
+            repos,
+            store,
+            bus,
+            scheduler,
+            supervisor,
+            renderer,
+            running_providers,
+        )
+        if web_server is None:
+            # With the web server running, uvicorn owns SIGINT/SIGTERM (its
+            # serve() insists) and its exit feeds our stop event; otherwise
+            # the signals are ours to catch.
+            _install_signal_handlers(stopping)
+
         log.info(
             "livepulse running",
             channels=len(active),
             nodes=len(await repos.nodes.list()),
             providers=sorted(built),
             mode=store.current.mode.value,
+            web=f"{settings.web.host}:{settings.web.port}" if web_server else "disabled",
         )
         if started is not None:
             started.set()
@@ -413,10 +493,21 @@ async def run_service(
             await stopping.wait()
         finally:
             log.info("shutting down")
-            _remove_signal_handlers()
+            if web_server is None:
+                _remove_signal_handlers()
 
-            # Ingestion first, so nothing publishes into a closing pipeline;
-            # the renderer last of the consumers, so the strip blanks cleanly.
+            # Web first, so no request arrives mid-teardown; then ingestion,
+            # so nothing publishes into a closing pipeline; the renderer last
+            # of the consumers, so the strip blanks cleanly.
+            if web_server is not None and web_task is not None:
+                web_server.should_exit = True
+                # asyncio.wait never re-raises the task's exception — a web
+                # server that died must not abort the rest of this teardown.
+                done, _ = await asyncio.wait({web_task}, timeout=5.0)
+                if not done:
+                    web_task.cancel()
+                    await asyncio.gather(web_task, return_exceptions=True)
+
             await supervisor.stop()
             scheduler.stop()
             for task in tasks:
@@ -429,6 +520,57 @@ async def run_service(
                 await entry.provider.aclose()
                 if entry.shared_http is not None:
                     await entry.shared_http.aclose()
+
+        # A web server that died on its own (a port already in use, usually)
+        # is why we are exiting; surface its error as ours.
+        if web_task is not None and web_task.done() and not web_task.cancelled():
+            web_task.result()
+
+
+def _start_web(
+    settings: Settings,
+    stopping: asyncio.Event,
+    repos: Repositories,
+    store: RuntimeSettingsStore,
+    bus: EventBus,
+    scheduler: IngestScheduler,
+    supervisor: PushSupervisor,
+    renderer: Renderer,
+    providers: dict[str, Provider],
+) -> tuple[uvicorn.Server | None, asyncio.Task[None] | None]:
+    """Start the web interface on the running loop, if enabled.
+
+    The server's exit — clean or not — sets the stop event: an appliance
+    whose UI has died should restart under systemd, not run on unreachable.
+
+    Args:
+        providers: A *live* mapping the composition root keeps updating, so
+            the API can resolve against platforms built after startup.
+    """
+    if not settings.web.enabled:
+        return None, None
+
+    context = WebContext(
+        repos=repos,
+        store=store,
+        bus=bus,
+        scheduler=scheduler,
+        supervisor=supervisor,
+        renderer=renderer,
+        providers=providers,
+        request_timeout=settings.ingest.request_timeout,
+    )
+    config = uvicorn.Config(
+        create_app(context),
+        host=settings.web.host,
+        port=settings.web.port,
+        log_config=None,
+        access_log=False,
+    )
+    server = uvicorn.Server(config)
+    task = asyncio.create_task(server.serve(), name="livepulse-web")
+    task.add_done_callback(lambda _: stopping.set())
+    return server, task
 
 
 def _install_signal_handlers(stopping: asyncio.Event) -> None:

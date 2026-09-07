@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from livepulse.app import run_service
-from livepulse.config.settings import LayoutSettings, LedSettings, Settings
+from livepulse.config.settings import LayoutSettings, LedSettings, Settings, WebSettings
 from livepulse.core.models import Channel, LiveState, StateSource
 from livepulse.storage.db import Database
 from livepulse.storage.repositories import Repositories
@@ -28,6 +28,9 @@ def service_settings(tmp_path: Path) -> Settings:
         data_dir=tmp_path,
         leds=LedSettings(backend="sim"),
         layout=LayoutSettings(nodes=4, leds_per_node=1, order="linear", rows=1),
+        # No listening socket in unit tests; the web layer has its own suite
+        # driven through the ASGI interface directly.
+        web=WebSettings(enabled=False),
     )
 
 
