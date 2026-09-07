@@ -111,6 +111,16 @@ class Renderer:
         """Exposed so the coordinator can schedule transients on go-live."""
         return self._compositor
 
+    @property
+    def elapsed(self) -> float:
+        """Seconds since construction, in the time base effects are sampled with.
+
+        A transient scheduled from the async side must use the renderer's own
+        idea of "now" — mixing time bases would start the animation mid-life or
+        in the future.
+        """
+        return self._clock.monotonic() - self._started_at
+
     def submit(self, state: RenderState) -> None:
         """Publish the next snapshot.
 

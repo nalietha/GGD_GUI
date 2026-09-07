@@ -81,6 +81,42 @@ def version() -> None:
     typer.echo(f"livepulse {__version__}")
 
 
+@app.command()
+def run(config: ConfigOption = None) -> None:
+    """Run the service: ingestion, coordination, and rendering.
+
+    One process, one source of truth. Reads channels and nodes from the
+    database, polls (and, where authorised, subscribes to) each platform, and
+    drives the strip until interrupted. SIGINT and SIGTERM shut down cleanly,
+    blanking the LEDs on the way out.
+    """
+    from livepulse.app import run_service
+
+    settings = _load(config)
+    configure_logging(level=settings.log_level, json=settings.log_json)
+
+    conflicts = conflicting_led_processes()
+    if conflicts:
+        for pid, command in conflicts:
+            typer.secho(
+                f"another process is driving the LEDs: pid {pid} ({command[:60]})",
+                fg=typer.colors.RED,
+                err=True,
+            )
+        typer.secho(
+            "stop it first — for V1: sudo systemctl stop led_listener.service",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        asyncio.run(run_service(settings))
+    except LivePulseError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+
+
 @app.command(name="config")
 def show_config(
     config: ConfigOption = None,
