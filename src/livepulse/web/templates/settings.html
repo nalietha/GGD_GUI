@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<section id="settings" data-live>
+  <h1>Display</h1>
+  <div class="fields">
+    <label>Brightness <output>{{ settings.brightness }}</output>
+      <input type="range" min="0" max="255" step="1" data-type="int"
+             data-patch="/api/v1/settings" name="brightness" value="{{ settings.brightness }}">
+    </label>
+
+    <label>Ambient effect
+      <select data-patch="/api/v1/settings" name="ambient_effect">
+        {% for name, description in effects.items() %}
+          <option value="{{ name }}" title="{{ description }}" {% if name == settings.ambient_effect %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label class="inline">
+      <input type="checkbox" data-patch="/api/v1/settings" name="ambient_enabled" {% if settings.ambient_enabled %}checked{% endif %}>
+      Show the ambient effect when nobody bound is live
+    </label>
+  </div>
+  <p class="hint">Off keeps tracking channels in the background; Ambient stops checking them altogether. Quiet hours are set in the config file.</p>
+
+  <h1>Providers</h1>
+  {% if not health %}
+    <p class="empty">No platforms in use yet.</p>
+  {% else %}
+    <ul class="health">
+      {% for provider_id, healthy in health.items() %}
+        <li class="{{ 'ok' if healthy else 'bad' }}">{{ provider_id }}: {{ "healthy" if healthy else "failing" }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>
+{% endblock %}

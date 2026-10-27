@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Channels{% endblock %}
+{% block content %}
+<section>
+  <h1>Add a channel</h1>
+  <form class="add" data-post="/api/v1/channels">
+    <label class="grow">Handle or link
+      <input type="text" name="input" required placeholder="https://twitch.tv/someone, or just someone" autocomplete="off">
+    </label>
+    <label>Platform
+      <select name="provider">
+        <option value="">Detect from link</option>
+        {% for provider_id, description in providers.items() %}
+          <option value="{{ provider_id }}" title="{{ description }}">{{ provider_id }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="inline">Colour <input type="color" name="color" value="#9146ff"></label>
+    <button type="submit">Add</button>
+  </form>
+  <p class="hint">A pasted link names its own platform. A bare handle needs one picked.</p>
+</section>
+
+<section id="channel-list" data-live>
+  <h1>Channels <span class="count">{{ channels | length }}</span></h1>
+  {% if not channels %}
+    <p class="empty">No channels yet. Add one above, then bind it to a node on the dashboard.</p>
+  {% else %}
+    <ul class="channels">
+      {% for channel in channels %}
+        {% set state = states.get(channel.id) %}
+        <li class="channel{% if state and state.is_live %} is-live{% endif %}{% if not channel.enabled %} is-disabled{% endif %}">
+          <span class="dot" title="{{ 'live' if state and state.is_live else ('offline' if state else 'not checked yet') }}"></span>
+          <div class="who">
+            <strong>{{ channel.label }}</strong>
+            <span class="meta">{{ channel.provider }} · {{ channel.handle }}{% if channel.id not in bound %} · not on a node{% endif %}</span>
+            {% if state and state.is_live and state.title %}<span class="title">{{ state.title }}</span>{% endif %}
+          </div>
+          <label class="inline">Colour
+            <input type="color" data-patch="/api/v1/channels/{{ channel.id }}" name="color" value="{{ channel.color | lower }}">
+          </label>
+          <label class="inline">Enabled
+            <input type="checkbox" data-patch="/api/v1/channels/{{ channel.id }}" name="enabled" {% if channel.enabled %}checked{% endif %}>
+          </label>
+          <button type="button" class="danger" data-delete="/api/v1/channels/{{ channel.id }}"
+                  data-confirm="Remove {{ channel.label }}? Nodes bound to it keep their colours.">Remove</button>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>
+{% endblock %}

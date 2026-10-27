@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LivePulse{% endblock %} · LivePulse</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{{ url_for('static', path='livepulse.css') }}">
+  <script src="{{ url_for('static', path='livepulse.js') }}" defer></script>
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="/">LivePulse</a>
+    <nav>
+      <a href="/" {% if page == "dashboard" %}aria-current="page"{% endif %}>Dashboard</a>
+      <a href="/channels" {% if page == "channels" %}aria-current="page"{% endif %}>Channels</a>
+      <a href="/settings" {% if page == "settings" %}aria-current="page"{% endif %}>Settings</a>
+    </nav>
+    {# The off switch lives on every page: §16 — a display you have to unplug
+       is a display that stops getting used. #}
+    <div class="modes" id="mode-switch" data-live role="group" aria-label="Display mode">
+      {% for option in modes %}
+        <button type="button"
+                data-patch="/api/v1/settings" name="mode" value="{{ option.value }}"
+                {% if option == mode %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
+          {{ option.value | capitalize }}
+        </button>
+      {% endfor %}
+    </div>
+    <span class="link-state" id="link-state" title="Live updates" aria-live="polite"></span>
+  </header>
+
+  <div class="notice" id="notice" role="alert" hidden></div>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="foot">LivePulse {{ version }} · <a href="/api/docs">API</a></footer>
+</body>
+</html>
