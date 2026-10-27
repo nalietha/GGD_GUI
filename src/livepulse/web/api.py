@@ -42,6 +42,7 @@ from livepulse.core.models import (
 )
 from livepulse.leds.color import to_hex
 from livepulse.leds.effects import available_effects, describe_effects
+from livepulse.leds.state import RenderState
 from livepulse.providers import (
     ProviderConfig,
     capabilities,
@@ -53,7 +54,7 @@ from livepulse.storage.runtime import RuntimeSettings
 from livepulse.web.app import WebContext, get_context
 from livepulse.web.events import event_stream
 
-__all__ = ["router"]
+__all__ = ["PreviewNode", "PreviewOut", "build_preview", "router"]
 
 router = APIRouter()
 
@@ -401,7 +402,11 @@ async def preview(context: WebContext = Depends(get_context)) -> PreviewOut:
     state = context.renderer.state
     if state is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "nothing rendered yet")
+    return build_preview(state)
 
+
+def build_preview(state: RenderState) -> PreviewOut:
+    """The renderer's snapshot in browser terms. Shared with the dashboard page."""
     return PreviewOut(
         mode=state.mode,
         brightness=state.brightness,

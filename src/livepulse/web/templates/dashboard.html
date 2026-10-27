@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<section id="nodes" data-live>
+  <h1>Nodes</h1>
+  {% if mode.value == "off" %}
+    <p class="hint">The display is off. Channels are still tracked, so the lights are correct the moment it comes back on.</p>
+  {% elif mode.value == "ambient" or ambient_active %}
+    <p class="hint">Ambient is showing{% if mode.value == "streamer" %} because nobody bound is live{% endif %}.</p>
+  {% endif %}
+
+  <ol class="grid">
+    {% for node in nodes %}
+      {% set view = preview.get(node.id) %}
+      <li class="node{% if view and view.live %} is-live{% endif %}">
+        <div class="node-head">
+          <span class="swatch" {% if view %}style="--swatch: {{ view.color }}"{% endif %}
+                title="{{ view.effect if view else 'not rendered yet' }}"></span>
+          <span class="node-name">Node {{ node.id + 1 }}</span>
+          {% if view and view.live %}<span class="badge live">Live</span>{% endif %}
+        </div>
+
+        <label>Channel
+          <select data-patch="/api/v1/nodes/{{ node.id }}" name="channel_id" data-nullable>
+            <option value="">— none —</option>
+            {% for channel in channels %}
+              <option value="{{ channel.id }}" {% if channel.id == node.channel_id %}selected{% endif %}>
+                {{ channel.label }} ({{ channel.provider }}){% if not channel.enabled %} · disabled{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>Effect
+          <select data-patch="/api/v1/nodes/{{ node.id }}" name="effect">
+            {% for name, description in effects.items() %}
+              <option value="{{ name }}" title="{{ description }}" {% if name == node.effect %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label class="inline">Idle colour
+          <input type="color" data-patch="/api/v1/nodes/{{ node.id }}" name="color" value="{{ node.color | lower }}">
+        </label>
+      </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

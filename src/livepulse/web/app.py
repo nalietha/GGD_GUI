@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 
 from livepulse import __version__
 from livepulse.core.bus import EventBus
@@ -56,8 +57,10 @@ def get_context(request: Request) -> WebContext:
 
 def create_app(context: WebContext) -> FastAPI:
     """Build the application around one context."""
-    # Imported here to avoid a cycle: the API module depends on get_context.
+    # Imported here to avoid a cycle: both modules depend on get_context.
     from livepulse.web.api import router as api_router
+    from livepulse.web.pages import STATIC_DIR
+    from livepulse.web.pages import router as pages_router
 
     app = FastAPI(
         title="LivePulse",
@@ -68,6 +71,8 @@ def create_app(context: WebContext) -> FastAPI:
     )
     app.state.context = context
     app.include_router(api_router, prefix="/api/v1")
+    app.include_router(pages_router)
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.get("/healthz")
     async def healthz() -> dict[str, object]:

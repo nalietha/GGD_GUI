@@ -328,9 +328,16 @@ events(id, ts, channel_id, kind, payload)                -- for the "recently li
 
 ## 9. Web UI & API
 
-**FastAPI + Jinja2 + htmx**, server-rendered, with **SSE** at `/api/v1/events` for live updates. That replaces the dead SignalR path with roughly twenty lines and no client library. Bootstrap, jQuery, and jQuery-validate all go; a single prebuilt CSS file ships in the repo so the Pi never needs a Node toolchain.
+**FastAPI + Jinja2**, server-rendered, with **SSE** at `/api/v1/events` for live updates. That replaces the dead SignalR path with roughly twenty lines and no client library. Bootstrap, jQuery, and jQuery-validate all go; a single prebuilt CSS file ships in the repo so the Pi never needs a Node toolchain.
 
-Pages: **Dashboard** (16-node grid, live dots, colour pickers, drag-to-assign), **Channels** (add by URL/handle with provider auto-detect, per-channel colours), **Effects**, **Settings**, **Providers** (per-provider auth state, health, quota, last error), **System** (WiFi, updates, logs).
+**htmx dropped (Phase 3).** The API is JSON-only, and htmx swaps HTML
+fragments, so it would have needed a second set of fragment endpoints — a
+second writer by another name. Instead a ~150-line dependency-free script
+(`web/static/livepulse.js`) sends writes to `/api/v1` and, on any SSE event,
+re-fetches the page and swaps its `data-live` regions. One set of templates
+serves first paint and live update alike.
+
+Pages: **Dashboard** (16-node grid, live dots, colour pickers; drag-to-assign deferred — a per-node channel picker covers it), **Channels** (add by URL/handle with provider auto-detect, per-channel colours), **Effects**, **Settings**, **Providers** (per-provider auth state, health, quota, last error), **System** (WiFi, updates, logs).
 
 REST under `/api/v1/`: `nodes`, `channels`, `bindings`, `settings`, `providers`, `effects`, `preview` (returns the current frame so the browser grid mirrors the physical strip), `hooks/{token}`.
 
@@ -383,7 +390,7 @@ Each phase ends with something runnable.
 | **0 — Skeleton** | Repo layout, `pyproject.toml`, CI, config loader, event bus, models, SQLite + migrations, `sim` LED backend, `livepulse doctor` | `python -m livepulse` runs on a laptop with a simulated strip |
 | **1 — Render core** | Driver protocol + `ws281x` + `spi`, layout descriptor, gamma, frame thread, compositor, six effects, golden-frame tests | Real lights, real animations, no network |
 | **2 — Providers (poll)** | Provider protocol, registry, scheduler with batching/jitter/rate limits, `twitch` poller, `manual`, `owncast` | Feature parity with V1's working path, correctly |
-| **3 — Web** | ~~`livepulse run` (the composed daemon)~~, ~~FastAPI~~, ~~SSE~~, ~~REST API~~, ~~`migrate-v1`~~, ~~**off button + quiet-hours schedule** (§16)~~, ~~`AMBIENT` idles ingestion~~; dashboard/channels/settings HTML pages still to do | V1 replaceable end-to-end; **cut over here** |
+| **3 — Web** | ~~`livepulse run` (the composed daemon)~~, ~~FastAPI~~, ~~SSE~~, ~~REST API~~, ~~`migrate-v1`~~, ~~**off button + quiet-hours schedule** (§16)~~, ~~`AMBIENT` idles ingestion~~, ~~dashboard/channels/settings pages~~ | V1 replaceable end-to-end; **cut over here** |
 | **4 — Push** | ~~Twitch EventSub WebSocket~~, ~~device-code auth~~, ~~connection supervisor~~; inbound webhook provider still to do | Sub-second go-live reaction |
 | **5 — Breadth** | `generic_http` declarative provider, YouTube, Kick, HLS probe, provider health UI | The actual decoupling-from-Twitch goal, delivered |
 | **6 — Polish** | WiFi provisioning, hotspot fallback, mDNS, systemd hardening, install script, docs, `leds identify` | Shippable to someone who isn't you |
@@ -401,7 +408,11 @@ neither strand the display dark nor stomp a manual off; `livepulse display
 off` is the off switch from the shell, via HTTP. Providers are built lazily,
 so a channel added through the API for a new platform polls without a
 restart (push for it still engages at the next start). §16 item 4 is closed:
-`AMBIENT` now idles polling, and leaving it settles silently.
+`AMBIENT` now idles polling, and leaving it settles silently. The dashboard,
+channels, and settings pages are up: server-rendered, writing only through
+the API, re-rendering live over SSE, and carrying the off switch in every
+page header. Phase 3 is functionally complete; what remains is the cutover
+itself — retiring the V1 trees.
 
 ---
 
