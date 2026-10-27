@@ -383,7 +383,7 @@ Each phase ends with something runnable.
 | **0 — Skeleton** | Repo layout, `pyproject.toml`, CI, config loader, event bus, models, SQLite + migrations, `sim` LED backend, `livepulse doctor` | `python -m livepulse` runs on a laptop with a simulated strip |
 | **1 — Render core** | Driver protocol + `ws281x` + `spi`, layout descriptor, gamma, frame thread, compositor, six effects, golden-frame tests | Real lights, real animations, no network |
 | **2 — Providers (poll)** | Provider protocol, registry, scheduler with batching/jitter/rate limits, `twitch` poller, `manual`, `owncast` | Feature parity with V1's working path, correctly |
-| **3 — Web** | ~~`livepulse run` (the composed daemon)~~, ~~FastAPI~~, ~~SSE~~, ~~REST API~~, ~~`migrate-v1`~~, ~~**off button + quiet-hours schedule** (§16)~~; dashboard/channels/settings HTML pages still to do | V1 replaceable end-to-end; **cut over here** |
+| **3 — Web** | ~~`livepulse run` (the composed daemon)~~, ~~FastAPI~~, ~~SSE~~, ~~REST API~~, ~~`migrate-v1`~~, ~~**off button + quiet-hours schedule** (§16)~~, ~~`AMBIENT` idles ingestion~~; dashboard/channels/settings HTML pages still to do | V1 replaceable end-to-end; **cut over here** |
 | **4 — Push** | ~~Twitch EventSub WebSocket~~, ~~device-code auth~~, ~~connection supervisor~~; inbound webhook provider still to do | Sub-second go-live reaction |
 | **5 — Breadth** | `generic_http` declarative provider, YouTube, Kick, HLS probe, provider health UI | The actual decoupling-from-Twitch goal, delivered |
 | **6 — Polish** | WiFi provisioning, hotspot fallback, mDNS, systemd hardening, install script, docs, `leds identify` | Shippable to someone who isn't you |
@@ -400,8 +400,8 @@ Quiet hours are live per §16, including persisted boundary memory so restarts
 neither strand the display dark nor stomp a manual off; `livepulse display
 off` is the off switch from the shell, via HTTP. Providers are built lazily,
 so a channel added through the API for a new platform polls without a
-restart (push for it still engages at the next start). Still open from §16:
-item 4 — `AMBIENT` does not yet idle ingestion.
+restart (push for it still engages at the next start). §16 item 4 is closed:
+`AMBIENT` now idles polling, and leaving it settles silently.
 
 ---
 
@@ -530,9 +530,12 @@ Three things this forces, worth naming before they surprise us:
    off` must call the local HTTP API rather than the database — the one place
    this could quietly reintroduce V1's central bug, where two processes
    disagreed about settings because they never told each other anything.
-4. **`AMBIENT` does not yet idle ingestion.** `DisplayMode.AMBIENT` is
+4. ~~**`AMBIENT` does not yet idle ingestion.**~~ **Done** — the coordinator
+   idles the scheduler in `AMBIENT` only; leaving it forgets previous
+   observations so resuming is a cold start, with no flash storm.
+   `DisplayMode.AMBIENT` was
    documented as "effects only, no platform polling", but `IngestScheduler`
-   never consults the mode and currently polls regardless. Harmless today
+   never consulted the mode and polled regardless. Harmless then
    — it wastes a little API budget in a mode nobody uses yet — but it is a
    divergence between a docstring and the code, which is precisely the class of
    drift that produced §3. Wire it in Phase 3, when the schedule service gives

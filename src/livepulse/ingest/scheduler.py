@@ -85,7 +85,7 @@ class _ProviderRuntime:
 class IngestScheduler:
     """Polls tracked channels and announces what changed."""
 
-    __slots__ = ("_bus", "_clock", "_policy", "_providers", "_settings", "_stopping")
+    __slots__ = ("_bus", "_clock", "_idle", "_policy", "_providers", "_settings", "_stopping")
 
     def __init__(
         self,
@@ -101,6 +101,7 @@ class IngestScheduler:
         self._policy = IntervalPolicy(settings, rng)
         self._providers: dict[str, _ProviderRuntime] = {}
         self._stopping = asyncio.Event()
+        self._idle = False
 
     # ----------------------------------------------------------------- #
     # Registration
@@ -222,6 +223,46 @@ class IngestScheduler:
                         tracked.next_due = 0.0
 
     @property
+    def idle(self) -> bool:
+        """Whether polling is suspended. See :meth:`set_idle`."""
+        return self._idle
+
+    def set_idle(self, idle: bool) -> bool:
+        """Suspend or resume polling, for ``DisplayMode.AMBIENT``.
+
+        Ambient is the "no internet required" mode: effects only, so polling
+        would spend API budget on answers nothing displays. Pushed updates are
+        still applied while idle — they cost no budget, and the socket is the
+        supervisor's business, not the mode's.
+
+        Resuming forgets every previous observation and makes every channel
+        due at once. Whatever was remembered from before the idle stretch is
+        of unknown age, and treating it as "previous" would turn everyone who
+        went live in the meantime into a fresh transition — a flash storm the
+        moment streamer mode returns. Forgetting it makes resumption a cold
+        start, which is already the quiet path (see §16 of the plan).
+
+        Note that ``OFF`` does *not* idle: quiet hours keep polling so the
+        lights are correct the instant they come back.
+
+        Returns:
+            Whether anything changed.
+        """
+        if idle == self._idle:
+            return False
+        self._idle = idle
+
+        if not idle:
+            for runtime in self._providers.values():
+                for tracked in runtime.channels.values():
+                    tracked.last = None
+                    tracked.consecutive_offline = 0
+                    tracked.next_due = 0.0
+
+        log.info("ingest idle" if idle else "ingest resumed", channels=self.tracked_count)
+        return True
+
+    @property
     def bus(self) -> EventBus:
         """Exposed so the push supervisor can announce subscription health."""
         return self._bus
@@ -246,8 +287,11 @@ class IngestScheduler:
         limit means something.
 
         Returns:
-            How many channels were polled.
+            How many channels were polled. Always zero while idle.
         """
+        if self._idle:
+            return 0
+
         now = self._clock.monotonic()
         work = [
             self._poll_provider(runtime, now)
@@ -300,6 +344,10 @@ class IngestScheduler:
 
     def _sleep_for(self) -> float:
         """Seconds until the next channel is due, bounded."""
+        if self._idle:
+            # Everything may well be due; without this the loop would spin.
+            return IDLE_SLEEP
+
         now = self._clock.monotonic()
         due = [
             tracked.next_due

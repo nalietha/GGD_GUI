@@ -144,18 +144,33 @@ class Coordinator:
         whole stand at once. Dropping them makes resumption a cold start,
         which is already the quiet path: no previous state, no flash.
         """
-        stored = await self._repos.live_state.all()
+        self._live = self._fresh(await self._repos.live_state.all())
+        self._sync_idle()
+        await self.reload()
+
+    def _fresh(self, observations: dict[UUID, LiveState]) -> dict[UUID, LiveState]:
+        """Keep only observations young enough to trust."""
         now = self._clock.now()
-        self._live = {
+        fresh = {
             channel_id: state
-            for channel_id, state in stored.items()
+            for channel_id, state in observations.items()
             if now - state.observed_at <= self._stale_after
         }
+        if dropped := len(observations) - len(fresh):
+            log.info("ignoring stale observations", count=dropped)
+        return fresh
 
-        if dropped := len(stored) - len(self._live):
-            log.info("ignoring stale stored observations", count=dropped)
+    def _sync_idle(self) -> None:
+        """Idle ingestion in AMBIENT and only AMBIENT — OFF keeps polling.
 
-        await self.reload()
+        Coming back from ambient, the scheduler forgets what it last saw so
+        resumption is a cold start; the cached observations get the same
+        staleness rule as a restart, so a long ambient stretch does not light
+        hours-old state while the first poll is in flight.
+        """
+        resumed = self._scheduler.set_idle(self._store.current.mode is DisplayMode.AMBIENT)
+        if resumed and not self._scheduler.idle:
+            self._live = self._fresh(self._live)
 
     async def reload(self) -> None:
         """Re-read channels and nodes, resync polling, publish a snapshot."""
@@ -234,6 +249,8 @@ class Coordinator:
             # The settings store has already updated its cache; only the
             # snapshot needs rebuilding. Mode OFF included — the compositor's
             # master fade handles darkness, so state keeps flowing underneath.
+            if isinstance(event, DisplayModeChanged):
+                self._sync_idle()
             self.submit()
 
     async def _on_state_changed(self, event: ChannelStateChanged) -> None:
