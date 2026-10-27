@@ -19,7 +19,12 @@ from livepulse.app import Coordinator
 from livepulse.config.settings import IngestSettings, LayoutSettings
 from livepulse.core.bus import EventBus
 from livepulse.core.clock import ManualClock
-from livepulse.core.events import ChannelStateChanged, NodeConfigChanged, SettingChanged
+from livepulse.core.events import (
+    ChannelStateChanged,
+    DisplayModeChanged,
+    NodeConfigChanged,
+    SettingChanged,
+)
 from livepulse.core.models import Channel, DisplayMode, LiveState, StateSource
 from livepulse.ingest.scheduler import IngestScheduler
 from livepulse.leds.color import RGB, GammaTable, parse_hex
@@ -239,6 +244,50 @@ class TestConfigChanges:
         await env.store.update(brightness=0)
         await env.coordinator.handle(SettingChanged(key="brightness"))
 
+        assert env.frame()[0] == BLACK
+
+
+class TestDisplayModes:
+    """AMBIENT idles ingestion; OFF deliberately does not (§16)."""
+
+    async def test_ambient_idles_ingestion(self, env: Env) -> None:
+        await env.add_channel("alice", node=0)
+        await env.coordinator.start()
+        assert not env.scheduler.idle
+
+        await env.store.update(mode=DisplayMode.AMBIENT)
+        await env.coordinator.handle(DisplayModeChanged(mode=DisplayMode.AMBIENT))
+
+        assert env.scheduler.idle
+
+    async def test_quiet_hours_keep_polling(self, env: Env) -> None:
+        """OFF is dark-but-running — that is what makes the schedule free."""
+        await env.add_channel("alice", node=0)
+        await env.coordinator.start()
+
+        await env.store.update(mode=DisplayMode.OFF)
+        await env.coordinator.handle(DisplayModeChanged(mode=DisplayMode.OFF))
+
+        assert not env.scheduler.idle
+
+    async def test_starting_in_ambient_starts_idle(self, env: Env) -> None:
+        await env.store.update(mode=DisplayMode.AMBIENT)
+        await env.coordinator.start()
+
+        assert env.scheduler.idle
+
+    async def test_leaving_ambient_resumes_and_drops_stale_state(self, env: Env) -> None:
+        """A long ambient stretch must not light hours-old observations."""
+        channel = await env.add_channel("alice", color="#ff0000", node=0)
+        await env.repos.live_state.record(channel.id, env.live())
+        await env.store.update(mode=DisplayMode.AMBIENT, ambient_enabled=False)
+        await env.coordinator.start()
+
+        env.clock.advance(3600.0)
+        await env.store.update(mode=DisplayMode.STREAMER)
+        await env.coordinator.handle(DisplayModeChanged(mode=DisplayMode.STREAMER))
+
+        assert not env.scheduler.idle
         assert env.frame()[0] == BLACK
 
 

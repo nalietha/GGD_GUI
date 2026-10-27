@@ -463,6 +463,87 @@ class TestTracking:
         assert sched.health() == {"recording": True, "manual": True}
 
 
+class TestIdle:
+    """AMBIENT idles ingestion; resuming must settle silently (§16)."""
+
+    async def test_idle_polls_nothing(self, bus: EventBus, clock: ManualClock) -> None:
+        sched = scheduler(bus, clock)
+        provider = RecordingProvider()
+        sched.register(provider)
+        await track(sched, provider, "someone")
+
+        assert sched.set_idle(True) is True
+        assert await sched.poll_once() == 0
+        assert provider.calls == 0
+
+    async def test_idle_does_not_spin(self, bus: EventBus, clock: ManualClock) -> None:
+        """Every channel is overdue while idle; the loop must still sleep."""
+        sched = scheduler(bus, clock)
+        provider = RecordingProvider()
+        sched.register(provider)
+        await track(sched, provider, "someone")
+        sched.set_idle(True)
+
+        assert sched._sleep_for() > 0
+
+    async def test_setting_the_same_state_reports_no_change(
+        self, bus: EventBus, clock: ManualClock
+    ) -> None:
+        sched = scheduler(bus, clock)
+        assert sched.set_idle(False) is False
+        sched.set_idle(True)
+        assert sched.set_idle(True) is False
+
+    async def test_resuming_polls_everything_at_once(
+        self, bus: EventBus, clock: ManualClock
+    ) -> None:
+        sched = scheduler(bus, clock)
+        provider = RecordingProvider()
+        sched.register(provider)
+        await track(sched, provider, "someone")
+        await sched.poll_once()
+
+        sched.set_idle(True)
+        sched.set_idle(False)
+
+        assert await sched.poll_once() == 1, "resuming should not wait out an interval"
+
+    async def test_resuming_does_not_flash_what_changed_meanwhile(
+        self, bus: EventBus, clock: ManualClock
+    ) -> None:
+        """Someone who went live during ambient is current state, not news."""
+        sched = scheduler(bus, clock)
+        provider = RecordingProvider()
+        sched.register(provider)
+        await track(sched, provider, "someone", last=LiveState.offline())
+
+        sched.set_idle(True)
+        provider.live.add("someone")
+        sched.set_idle(False)
+
+        with bus.subscribe(ChannelStateChanged) as events:
+            await sched.poll_once()
+            received = await drain(events)
+
+        event = received[0]
+        assert isinstance(event, ChannelStateChanged)
+        assert event.current.is_live
+        assert event.went_live is False
+
+    async def test_pushed_updates_still_apply_while_idle(
+        self, bus: EventBus, clock: ManualClock
+    ) -> None:
+        """Push costs no budget, so idling is about polling only."""
+        sched = scheduler(bus, clock)
+        provider = RecordingProvider()
+        sched.register(provider)
+        ref = await provider.resolve("someone")
+        sched.track(uuid4(), ref)
+        sched.set_idle(True)
+
+        assert sched.apply_push(ref, LiveState(is_live=True)) is True
+
+
 class TestEmptyState:
     async def test_polling_with_nothing_tracked_is_a_noop(
         self, bus: EventBus, clock: ManualClock
